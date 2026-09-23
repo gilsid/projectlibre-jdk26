@@ -115,7 +115,18 @@ public class LafManagerImpl implements LafManager {
 			try {
 						int os=Environment.getOs();
 						if (os==Environment.LINUX/*||os==Environment.MAC*/) //$NON-NLS-1$ //$NON-NLS-2$
-								UIManager.setLookAndFeel("javax.swing.plaf.metal.MetalLookAndFeel"); //$NON-NLS-1$
+								// Prefer native/System LAF on Linux for crisp fonts + HiDPI.
+								// Old code forced MetalLookAndFeel which renders blocky
+								// grayscale text. Fall back to Nimbus, then Metal.
+								try {
+									UIManager.setLookAndFeel(UIManager.getSystemLookAndFeelClassName());
+								} catch (Exception systemLafFailed) {
+									try {
+										UIManager.setLookAndFeel("javax.swing.plaf.nimbus.NimbusLookAndFeel"); //$NON-NLS-1$
+									} catch (Exception nimbusFailed) {
+										UIManager.setLookAndFeel("javax.swing.plaf.metal.MetalLookAndFeel"); //$NON-NLS-1$
+									}
+								}
 								//UIManager.setLookAndFeel("com.sun.java.swing.plaf.gtk.GTKLookAndFeel");
 						else {
 							UIManager.setLookAndFeel(UIManager.getSystemLookAndFeelClassName());

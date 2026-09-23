@@ -163,7 +163,11 @@ public abstract class StartupFactory {
 //		System.out.println("---------- StartupFactory instanceFromNewSession#1 main");
 		Environment.setClientSide(true);
 
-		System.setSecurityManager(null);
+		try {
+			System.setSecurityManager(null);
+		} catch (UnsupportedOperationException e) {
+			// JDK 24+ (JEP 411/486): SecurityManager is disabled/removed, nothing to clear.
+		}
 		Thread loadConfigThread=new Thread("loadConfig"){
 			public void run() {
 				long t=System.currentTimeMillis();

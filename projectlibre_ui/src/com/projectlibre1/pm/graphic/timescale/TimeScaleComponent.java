@@ -61,7 +61,9 @@ import java.awt.Font;
 import java.awt.Graphics;
 import java.awt.Graphics2D;
 import java.awt.Rectangle;
+import java.awt.RenderingHints;
 import java.awt.Shape;
+import java.awt.Toolkit;
 import java.awt.font.FontRenderContext;
 import java.awt.font.LineMetrics;
 import java.awt.geom.Line2D;
@@ -130,6 +132,7 @@ public class TimeScaleComponent extends JPanel {
 	}
 
 	public static void paintTimeScale(Graphics2D g2,CoordinatesConverter coord,Font font,Dimension d,boolean clipping){
+		applyCrispTextHints(g2);
 		Rectangle clipBounds = g2.getClipBounds();
 		double h=d.getHeight();
 		double x0,w;
@@ -153,6 +156,10 @@ public class TimeScaleComponent extends JPanel {
 
 
 		TimeIterator i=coord.getTimeIterator(x0,x0+w);
+		g2.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
+		g2.setRenderingHint(RenderingHints.KEY_TEXT_ANTIALIASING, RenderingHints.VALUE_TEXT_ANTIALIAS_LCD_HRGB);
+		g2.setRenderingHint(RenderingHints.KEY_FRACTIONALMETRICS, RenderingHints.VALUE_FRACTIONALMETRICS_ON);
+		g2.setRenderingHint(RenderingHints.KEY_RENDERING, RenderingHints.VALUE_RENDER_QUALITY);
 		//g2.getRenderingHints().put(RenderingHints.KEY_ANTIALIASING,RenderingHints.VALUE_ANTIALIAS_ON);
 		//g2.setFont(new Font("Courrier", Font.PLAIN, 12));
 		g2.setFont(/*UIManager.getFont("TableHeader.cellFont")*/font);
@@ -198,5 +205,21 @@ public class TimeScaleComponent extends JPanel {
 
 		}
 
+	}
+
+	/**
+	 * Applies desktop LCD subpixel hints when available, otherwise LCD HRGB +
+	 * fractional metrics. Fixes visibly pixelated timeline headers on Linux HiDPI.
+	 */
+	private static void applyCrispTextHints(Graphics2D g2) {
+		Object desktopHints = Toolkit.getDefaultToolkit().getDesktopProperty("awt.font.desktophints");
+		if (desktopHints instanceof java.util.Map) {
+			g2.addRenderingHints((java.util.Map<?, ?>) desktopHints);
+		} else {
+			g2.setRenderingHint(RenderingHints.KEY_TEXT_ANTIALIASING, RenderingHints.VALUE_TEXT_ANTIALIAS_LCD_HRGB);
+			g2.setRenderingHint(RenderingHints.KEY_FRACTIONALMETRICS, RenderingHints.VALUE_FRACTIONALMETRICS_ON);
+		}
+		g2.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
+		g2.setRenderingHint(RenderingHints.KEY_RENDERING, RenderingHints.VALUE_RENDER_QUALITY);
 	}
 }

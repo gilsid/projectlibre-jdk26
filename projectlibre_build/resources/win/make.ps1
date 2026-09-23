@@ -1,13 +1,13 @@
 $AppVersion = "@version@"
 $OutputDir = "app"
 
-$env:JAVA_HOME = "C:\Program Files\Java\jdk-21"
+$env:JAVA_HOME = "C:\Program Files\Java\jdk-26"
 
 
 $JpackagePath = Join-Path $env:JAVA_HOME "bin\jpackage.exe"
 
 if (-not (Test-Path $JpackagePath)) {
-    Write-Error "jpackage not found. Make sure JAVA_HOME is set to a valid JDK 14+ path."
+    Write-Error "jpackage not found. Make sure JAVA_HOME is set to a valid JDK 26+ path."
     exit 1
 }
 

@@ -81,8 +81,7 @@
 			classpathref="compile.class.path"
 			debug="off"
 			nowarn="on"
-			source="21"
-			target="21">
+			release="26">
 				<src path="src" />
 				<include name="**/*" />
 		</javac>

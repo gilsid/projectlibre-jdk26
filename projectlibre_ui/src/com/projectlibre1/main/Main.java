@@ -71,6 +71,7 @@ import com.projectlibre1.util.Environment;
  */
 public class Main {
 	public static void main(String[] args) {
+		configureCrispText();
 		int runNumber=getRunNumber()+1;
 		long firstRun=getFirstRun();
 		Preferences.userNodeForPackage(Main.class).putInt("projectlibreRunNumber",runNumber);
@@ -123,6 +124,23 @@ public class Main {
 	}
 	public static String getRunSinceMessage() {
 		return MessageFormat.format(Messages.getString("Text.runsSinceMessage"),new Object[] {getRunNumber(),new Date(getFirstRun())});
+	}
+
+	/**
+	 * Enables subpixel/LCD font smoothing and fractional metrics before any
+	 * Swing component is created. Without this, text on Linux HiDPI looks
+	 * blocky/pixelated (Metal LAF + default grayscale AA).
+	 * Honors explicit -D flags from launcher scripts.
+	 */
+	private static void configureCrispText() {
+		if (System.getProperty("awt.useSystemAAFontSettings") == null)
+			System.setProperty("awt.useSystemAAFontSettings", "on");
+		if (System.getProperty("swing.aatext") == null)
+			System.setProperty("swing.aatext", "true");
+		if (System.getProperty("sun.java2d.xrender") == null)
+			System.setProperty("sun.java2d.xrender", "true");
+		if (System.getProperty("sun.java2d.uiScale.enabled") == null)
+			System.setProperty("sun.java2d.uiScale.enabled", "true");
 	}
 
 }

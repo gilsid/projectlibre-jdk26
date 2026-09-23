@@ -8,7 +8,7 @@ Standards-Version: 3.7.2
 Package: projectlibre
 Architecture: any
 Depends: ${shlibs:Depends}, ${misc:Depends}, ant
-Depends: java7-sdk | java6-sdk | openjdk-7-jdk | openjdk-6-jdk
+Depends: default-jdk | openjdk-26-jdk | openjdk-21-jdk | openjdk-17-jdk
 Description: A desktop replacement for Microsoft Project
  It is capable of sharing files with Microsoft Project and has very similar
  functionality (Gantt, PERT diagram, histogram, charts, reports, detailed

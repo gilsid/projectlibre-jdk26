@@ -72,6 +72,10 @@ import com.projectlibre1.util.Environment;
  */
 public class Main {
 	public static void main(String[] args) {
+		if (System.getProperty("awt.useSystemAAFontSettings") == null)
+			System.setProperty("awt.useSystemAAFontSettings", "on");
+		if (System.getProperty("swing.aatext") == null)
+			System.setProperty("swing.aatext", "true");
 		System.setProperty("apple.awt.application.name","ProjectLibre");
 		System.setProperty("apple.laf.useScreenMenuBar","true");
 		Locale.setDefault(ConfigurationFile.getLocale());
