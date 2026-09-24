@@ -60,6 +60,7 @@ import java.awt.Graphics2D;
 import java.io.File;
 import java.io.FileOutputStream;
 import java.io.IOException;
+import java.util.Locale;
 
 import javax.swing.JFileChooser;
 import javax.swing.filechooser.FileFilter;
@@ -78,33 +79,64 @@ import com.projectlibre1.session.SessionFactory;
 public class PDFExport {
 	public static void export(final GraphPageable pageable,Component parentComponent) throws IOException{
 		final File file=chooseFile(pageable.getRenderer().getProject().getName(),parentComponent);
+		if (file == null) {
+			return;
+		}
 		final JobQueue jobQueue=SessionFactory.getInstance().getJobQueue();
 		Job job=new Job(jobQueue,"PDF Export","Exporting PDF...",true,parentComponent);
 		job.addRunnable(new JobRunnable("PDF Export",1.0f){
 			public Object run() throws Exception{
-				Document document = new Document();
-				PdfWriter writer = PdfWriter.getInstance(document, new FileOutputStream(file));
 				pageable.update();
 				int pageCount = pageable.getNumberOfPages();
-				if (pageCount>0){
-					ViewPrintable printable=pageable.getSafePrintable();
-					ExtendedPageFormat pageFormat=pageable.getSafePageFormat();
-					double width=pageFormat.getWidth();
-					double height=pageFormat.getHeight();
-					float startIncrement=0.1f;
-					float endIncrement=0.0f;						
-					float progressIncrement = (1.0f-startIncrement-endIncrement)/pageCount;
-					for (int p=0;p< pageCount;p++) {
-						setProgress(startIncrement+p*progressIncrement);
-						document.setPageSize(new Rectangle((float)width,(float)height));
-						if (p==0) document.open();
-						else document.newPage();
-						
-						Graphics2D g = writer.getDirectContent().createGraphics((float)width, (float)height);
-						printable.print(g, p);
-						g.dispose();
+				if (pageCount == 0) {
+					setProgress(1.0f);
+					return null;
+				}
+
+				File tempFile=null;
+				try {
+					tempFile=AtomicExportFile.createSiblingTempFile(file);
+					try (FileOutputStream output = new FileOutputStream(tempFile)) {
+						Document document = new Document();
+						boolean documentOpen = false;
+						try {
+							PdfWriter writer = PdfWriter.getInstance(document, output);
+							ViewPrintable printable=pageable.getSafePrintable();
+							ExtendedPageFormat pageFormat=pageable.getSafePageFormat();
+							double width=pageFormat.getWidth();
+							double height=pageFormat.getHeight();
+							float startIncrement=0.1f;
+							float endIncrement=0.0f;
+							float progressIncrement = (1.0f-startIncrement-endIncrement)/pageCount;
+							for (int p=0;p< pageCount;p++) {
+								setProgress(startIncrement+p*progressIncrement);
+								document.setPageSize(new Rectangle((float)width,(float)height));
+								if (p==0) {
+									document.open();
+									documentOpen = true;
+								} else {
+									document.newPage();
+								}
+
+								Graphics2D g = writer.getDirectContent().createGraphics((float)width, (float)height);
+								try {
+									printable.print(g, p);
+								} finally {
+									g.dispose();
+								}
+							}
+						} finally {
+							if (documentOpen) {
+								document.close();
+							}
+						}
 					}
-					document.close();
+					AtomicExportFile.replace(tempFile, file);
+					tempFile=null;
+				} finally {
+					if (tempFile != null) {
+						tempFile.delete();
+					}
 				}
 				setProgress(1.0f);
 				return null;
@@ -121,21 +153,30 @@ public class PDFExport {
     		chooser.setDialogType(JFileChooser.SAVE_DIALOG);
     		chooser.addChoosableFileFilter(new FileFilter(){
     		    public boolean accept(File f){
-    		    	return f.isDirectory()||f.getName().toLowerCase().endsWith(".pdf");
+    		    	return f.isDirectory()||f.getName().toLowerCase(Locale.ROOT).endsWith(".pdf");
     		    }
     		    public String getDescription(){
     		    	return "PDF (*.pdf)";
     		    }
     		});
     	}
-		if (projectName.length()==0)
+		if (projectName == null || projectName.length()==0)
 			projectName="project";
 		chooser.setSelectedFile(new File(projectName+".pdf"));
 		if (chooser.showDialog(parentComponent, null) == JFileChooser.APPROVE_OPTION){
 			File file=chooser.getSelectedFile();
-			if (!file.getName().endsWith(".pdf")) file=new File(file.getName()+".pdf"); //add pdf extension if missing
-			return file;
+			return withPdfExtension(file);
 		} else return null;
     }
+
+	private static File withPdfExtension(File file) {
+		if (file.getName().toLowerCase(Locale.ROOT).endsWith(".pdf")) {
+			return file;
+		}
+		if (file.getParentFile() == null) {
+			return new File(file.getName() + ".pdf");
+		}
+		return new File(file.getParentFile(), file.getName() + ".pdf");
+	}
 
 }

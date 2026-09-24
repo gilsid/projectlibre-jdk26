@@ -69,10 +69,15 @@
 	</target>
 	
 	<target name="build" depends="prepare">
+		<copy todir="${build}">
+			<fileset dir="${src}" excludes="**/*.java,**/test/**,**/version.properties"/>
+		</copy>
 		<javac destdir="${build}"
 			classpathref="compile.class.path"
 			debug="off"
-			nowarn="on"
+			encoding="UTF-8"
+			includeantruntime="false"
+			failonerror="true"
 			release="26">
 				<src path="${src}" />
 				<include name="**/*" />

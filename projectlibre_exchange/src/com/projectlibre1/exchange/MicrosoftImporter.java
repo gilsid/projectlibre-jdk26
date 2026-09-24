@@ -55,6 +55,7 @@
  * logo it must direct them back to http://www.projectlibre.com. 
  *******************************************************************************/
 package com.projectlibre1.exchange;
+import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
 import java.util.ArrayList;
@@ -170,7 +171,9 @@ public class MicrosoftImporter extends ServerFileImporter{
 	public void exportFile() throws Exception {
 		MSPDISerializer serializer = new MSPDISerializer();
 		//serializer.setJob(this);
-		serializer.saveProject(project,fileName);
+		if (!serializer.saveProject(project,fileName)) {
+     			throw new IOException("Project export failed");
+     		}
 	}
 
 
@@ -203,9 +206,6 @@ public class MicrosoftImporter extends ServerFileImporter{
 				
 			}
 		});
-		log.info(plProject.toString());
-		
-		
 		if (plProject == null) {
 			String errorText = (errorDescription == null) ? Messages.getString("Message.ImportError") : errorDescription; //$NON-NLS-1$
 			if (jobRunnable != null) {
@@ -246,9 +246,6 @@ public class MicrosoftImporter extends ServerFileImporter{
 			}
 		});
 
-		log.info(plProject.toString());
-		
-		
 		if (plProject == null) {
 			String errorText = (errorDescription == null) ? Messages.getString("Message.ImportError") : errorDescription; //$NON-NLS-1$
 			if (jobRunnable != null) {
@@ -372,6 +369,9 @@ public class MicrosoftImporter extends ServerFileImporter{
 		setProgress(0.9f);
 				
 		log.info("about to initialize");		 //$NON-NLS-1$
+			if (project==null) {
+				throw new IllegalStateException("Project initialization did not produce a project");
+			}
 			if (project.getName() == null)
 				project.setName("error - name not set on import"); //$NON-NLS-1$
 
@@ -379,13 +379,14 @@ public class MicrosoftImporter extends ServerFileImporter{
 			try {
 				project.initialize(false,false); // will run critical path
 			} catch (RuntimeException e) {
-				if (e.getMessage()==CircularDependencyException.RUNTIME_EXCEPTION_TEXT) {
-					Environment.setImporting(false); // will avoid certain popups
-					Alert.error(e.getMessage());
-					plProject = null;
-					project = null;
-					throw new Exception(e.getMessage());
+				if (!CircularDependencyException.RUNTIME_EXCEPTION_TEXT.equals(e.getMessage())) {
+					throw e;
 				}
+				Environment.setImporting(false); // will avoid certain popups
+				Alert.error(e.getMessage());
+				plProject = null;
+				project = null;
+				throw new Exception(e);
 			}
 			//project.setGroupDirty(!Environment.getStandAlone());
 			if (!Environment.getStandAlone()) project.setAllDirty();
@@ -654,7 +655,9 @@ public class MicrosoftImporter extends ServerFileImporter{
     		public Object run() throws Exception{
      			MSPDISerializer serializer = new MSPDISerializer();
     			serializer.setJob(this);
-    			serializer.saveProject(project,fileName);
+    			if (!serializer.saveProject(project,fileName)) {
+     			throw new IOException("Project export failed");
+     		}
     			return null;
     		}
     	});

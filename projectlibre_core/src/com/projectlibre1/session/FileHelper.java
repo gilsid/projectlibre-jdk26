@@ -57,6 +57,7 @@ package com.projectlibre1.session;
 
 import java.awt.Component;
 import java.io.File;
+import java.util.Locale;
 import java.util.prefs.Preferences;
 
 import javax.swing.Icon;
@@ -83,7 +84,7 @@ public class FileHelper {
     	return fileChooser;
     }
     public synchronized String chooseFileName(final boolean save,String selectedFileName,Component fileChooserParent){
-    	if (!Environment.getStandAlone()&&save&&selectedFileName!=null&&selectedFileName.endsWith("."+DEFAULT_FILE_EXTENSION)){
+    	if (!Environment.getStandAlone()&&save&&selectedFileName!=null&&selectedFileName.toLowerCase(Locale.ROOT).endsWith("."+DEFAULT_FILE_EXTENSION)){
     		selectedFileName=changeFileExtension(selectedFileName,save?"xml":"mpp");
     	}
 	JFileChooser fileChooser = getFileChooser();
@@ -119,7 +120,7 @@ public class FileHelper {
     	
 		final FileFilter projectlibreFilter=new FileFilter(){
 		    public boolean accept(File f){
-		    	return f.isDirectory()||f.getName().toLowerCase().endsWith("."+DEFAULT_FILE_EXTENSION);
+		    	return f.isDirectory()||f.getName().toLowerCase(Locale.ROOT).endsWith("."+DEFAULT_FILE_EXTENSION);
 		    }
 		    public String getDescription(){
 		    	//return "projectlibre";
@@ -129,7 +130,7 @@ public class FileHelper {
 		final FileFilter microsoftFilter=new FileFilter(){
 		    public boolean accept(File f){
 		    	boolean isAllowed;
-				String n = f.getName().toLowerCase();
+				String n = f.getName().toLowerCase(Locale.ROOT);
 		    	if (save) isAllowed=false;
 		    	else isAllowed=n.endsWith(".mpp") || n.endsWith(".mpx");			
 		    	return f.isDirectory()||isAllowed;
@@ -142,7 +143,7 @@ public class FileHelper {
 		final FileFilter microsoftXMLFilter=new FileFilter(){
 		    public boolean accept(File f){
 		    	boolean isAllowed;
-				String n = f.getName().toLowerCase();
+				String n = f.getName().toLowerCase(Locale.ROOT);
 		    	if (save) isAllowed=n.endsWith(".xml");
 		    	else isAllowed=n.endsWith(".xml");			
 		    	return f.isDirectory()||isAllowed;
@@ -155,9 +156,9 @@ public class FileHelper {
 		final FileFilter plannerFilter=new FileFilter(){
 		    public boolean accept(File f){
 		    	boolean isAllowed;
-				String n = f.getName().toLowerCase();
+				String n = f.getName().toLowerCase(Locale.ROOT);
 		    	if (save) isAllowed=false;
-		    	else isAllowed=n.endsWith("*.planner");			
+		    	else isAllowed=n.endsWith(".planner");			
 		    	return f.isDirectory()||isAllowed;
 		    }
 		    public String getDescription(){
@@ -201,10 +202,11 @@ public class FileHelper {
 		String fileName=file.toString();
 		FileFilter currentFilter=fileChooser.getFileFilter();
 		if (save){
+			String normalizedFileName=fileName.toLowerCase(Locale.ROOT);
 			if (currentFilter==microsoftXMLFilter){
-				if(!fileName.endsWith(".xml")) fileName+=".xml";
+				if(!normalizedFileName.endsWith(".xml")) fileName+=".xml";
 			}
-			else if (!fileName.endsWith(".pod")) fileName+=".pod";
+			else if (!normalizedFileName.endsWith(".pod")) fileName+=".pod";
 		}
 		
 		Preferences.userNodeForPackage(FileHelper.class).put("lastDirectory",file.getParent());
@@ -213,14 +215,14 @@ public class FileHelper {
     }
 
     public static boolean isFileNameAllowed(String fileName,boolean save) {
-		String n = fileName.toLowerCase();
+		String n = fileName.toLowerCase(Locale.ROOT);
     	if (save) return n.endsWith(".xml")||n.endsWith("."+DEFAULT_FILE_EXTENSION);
     	else return n.endsWith(".xml")||n.endsWith(".mpp")||n.endsWith(".mpx")||n.endsWith(".planner")||n.endsWith("."+DEFAULT_FILE_EXTENSION) || n.endsWith(".mpx");
 	}
 
     public static String getFileExtension(String fileName) {
         int i=fileName.lastIndexOf('.');
-        if (i>0&&i<fileName.length()-1) return fileName.substring(i+1).toLowerCase();
+        if (i>0&&i<fileName.length()-1) return fileName.substring(i+1).toLowerCase(Locale.ROOT);
         return null;
     }
     public static String changeFileExtension(String fileName,int fileType) {
@@ -254,7 +256,7 @@ public class FileHelper {
 
     public static int getFileType(String fileName){
     	if (fileName==null) return 0;
-    	fileName=fileName.toLowerCase();
+    	fileName=fileName.toLowerCase(Locale.ROOT);
     	if (fileName.endsWith(DEFAULT_FILE_EXTENSION))
     		return PROJECTLIBRE_FILE_TYPE;
     	if (fileName.endsWith("mpp")||fileName.endsWith("mpx")||fileName.endsWith("xml")||fileName.endsWith("planner"))

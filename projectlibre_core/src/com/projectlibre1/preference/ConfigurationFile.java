@@ -66,7 +66,6 @@ import java.util.Locale;
 import java.util.Properties;
 import java.util.PropertyResourceBundle;
 import java.util.ResourceBundle;
-import java.util.StringTokenizer;
 import java.util.prefs.Preferences;
 
 import com.projectlibre1.session.FileHelper;
@@ -108,10 +107,8 @@ public class ConfigurationFile {
 			File f=new File(confDir,OPENPROJ_CONF_FILE);
 			if (!f.exists()) return null;
 			confProps=new Properties();
-			try {
-				FileInputStream in=new FileInputStream(f);
+			try (FileInputStream in = new FileInputStream(f)) {
 				confProps.load(in);
-				in.close();
 			} catch (Exception e) {}
 		}
 		return confProps.getProperty(key);
@@ -127,49 +124,30 @@ public class ConfigurationFile {
 		return locale;
 	}
 	public static Locale getLocale(String code){
-		Locale defaultLocale=Locale.getDefault();
-		String language=null;
-		String country=null;
-		String variant=null;
-		StringTokenizer st=new StringTokenizer(code,"_-");
-		if (!st.hasMoreTokens()) locale=defaultLocale;
-		else{
-			language=st.nextToken();
-			if (!st.hasMoreTokens()) locale=new Locale(language,defaultLocale.getCountry());
-			else{
-				country=st.nextToken();
-				if (!st.hasMoreTokens()) locale=new Locale(language,country);
-				else{
-					variant=st.nextToken();
-					locale=new Locale(language,country,variant);
-				}
-				
-			}
-			
+		if (code == null || code.trim().length() == 0) {
+			return Locale.getDefault();
 		}
-		return locale;
+		String[] parts=code.trim().split("[-_]", 3);
+		try {
+			return switch (parts.length) {
+				case 1 -> Locale.of(parts[0]);
+				case 2 -> Locale.of(parts[0], parts[1]);
+				default -> Locale.of(parts[0], parts[1], parts[2]);
+			};
+		} catch (IllegalArgumentException e) {
+			return Locale.getDefault();
+		}
 	}
 	public static String[] getLocaleCodes(String code){
-		Locale defaultLocale=Locale.getDefault();
-		String language=null;
-		String country=null;
-		String variant=null;
-		StringTokenizer st=new StringTokenizer(code,"_-");
-		if (!st.hasMoreTokens()) locale=defaultLocale;
-		else{
-			language=st.nextToken();
-			if (!st.hasMoreTokens()) locale=new Locale(language,defaultLocale.getCountry());
-			else{
-				country=st.nextToken();
-				if (!st.hasMoreTokens()) locale=new Locale(language,country);
-				else{
-					variant=st.nextToken();
-				}
-				
-			}
-			
+		if (code == null || code.trim().length() == 0) {
+			return new String[] {null, null, null};
 		}
-		return new String[] {language, country, variant};
+		String[] parts=code.trim().split("[-_]", 3);
+		return switch (parts.length) {
+			case 1 -> new String[] {parts[0], null, null};
+			case 2 -> new String[] {parts[0], parts[1], null};
+			default -> new String[] {parts[0], parts[1], parts[2]};
+		};
 	}
 	
 	private static final String OPENPROJ_RUN_CONF_FILE="run.conf";
@@ -181,10 +159,8 @@ public class ConfigurationFile {
 			File f=new File(confDir,OPENPROJ_RUN_CONF_FILE);
 			if (!f.exists()) return null;
 			runProps=new Properties();
-			try {
-				FileInputStream in=new FileInputStream(f);
+			try (FileInputStream in = new FileInputStream(f)) {
 				runProps.load(in);
-				in.close();
 			} catch (Exception e) {}
 		}
 		return runProps.getProperty(key);
@@ -227,9 +203,16 @@ public class ConfigurationFile {
 			return null;
 		try {
 			URL[] urls={directory.toURI().toURL()};
-			ClassLoader cl=new URLClassLoader(urls);
-			ResourceBundle rb=ResourceBundle.getBundle(name, Locale.getDefault(), cl);
-			return rb;
+			URLClassLoader cl=new URLClassLoader(urls);
+			try {
+				return ResourceBundle.getBundle(name, getLocale(), cl);
+			} finally {
+				try {
+					cl.close();
+				} catch (IOException e2) {
+					e2.printStackTrace();
+				}
+			}
 		} catch (MalformedURLException e1) {
 			e1.printStackTrace();
 		}

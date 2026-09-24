@@ -97,7 +97,9 @@
 				<javac destdir="${build}"
 					classpathref="compile.class.path"
 					debug="off"
-					nowarn="on"
+					encoding="UTF-8"
+					includeantruntime="false"
+					failonerror="true"
 					release="26">
 						<src path="${src_core}" />
 						<src path="${src_ui}" />
@@ -113,7 +115,9 @@
 				<javac destdir="${build}"
 					classpathref="compile-no_contrib_built.class.path"
 					debug="off"
-					nowarn="on"
+					encoding="UTF-8"
+					includeantruntime="false"
+					failonerror="true"
 					release="26">
 						<src path="${src_core}" />
 						<src path="${src_ui}" />
@@ -154,6 +158,33 @@
 		  </filterset>
 		</copy>
 
+	</target>
+
+	<target name="test" depends="build">
+		<mkdir dir="${build}-tests"/>
+		<path id="test.class.path">
+			<pathelement location="${build}"/>
+			<fileset dir="../projectlibre_contrib" includes="projectlibre-*.jar"/>
+			<fileset dir="../projectlibre_contrib/lib" includes="**/*.jar"/>
+		</path>
+		<javac destdir="${build}-tests"
+			classpathref="test.class.path"
+			encoding="UTF-8"
+			includeantruntime="false"
+			failonerror="true"
+			release="26">
+			<src path="testsrc"/>
+			<include name="**/*.java"/>
+		</javac>
+		<java classname="ProjectLibreRegressionTest"
+			fork="true"
+			failonerror="true"
+			timeout="30000">
+			<classpath>
+				<pathelement location="${build}-tests"/>
+				<path refid="test.class.path"/>
+			</classpath>
+		</java>
 	</target>
 
 
@@ -274,7 +305,7 @@
 			<fileset dir="${resources}">
 				<include name="projectlibre.sh"/>
 				<include name="projectlibre.bat"/>
-				<include name="sample/**"/>
+				<include name="samples/**"/>
 			</fileset>
 			<fileset dir=".">
 				<include name="license/**"/>
@@ -286,6 +317,10 @@
 				<filter token="version_name" value="${version_name}"/>
 			</filterset>
 		</copy>
+		<exec executable="chmod">
+			<arg value="+x"/>
+			<arg value="${packages}/projectlibre-${version}/projectlibre.sh"/>
+		</exec>
 	</target>
 
 	<target name="tar" depends="dir">
@@ -293,7 +328,7 @@
 			<arg value="+x"/>
 			<arg value="${packages}/projectlibre-${version}/projectlibre.sh"/>
 		</exec>
-		<exec executable="/opt/homebrew/bin/gtar"> <!-- to preserve permissions also add export COPYFILE_DISABLE=true -->
+		<exec executable="${tar_executable}" failonerror="true"> <!-- to preserve permissions also add export COPYFILE_DISABLE=true -->
 			<arg value="--numeric-owner"/>
 			<arg value="--owner=0"/>
 			<arg value="--group=0"/>
@@ -389,7 +424,9 @@
 				<!--arg value="${basedir}/${rpm}/INSTALL"/-->
 				<arg value="${rpm}_@{rpmbuild}/SPECS/projectlibre.spec"/>
 			</exec>
-			<move tofile="${packages}/projectlibre-${rpm_version}-${rpm_revision}.@{rpmbuild}.rpm" file="${rpm}_@{rpmbuild}/RPMS/i386/projectlibre-${rpm_version}-${rpm_revision}.i386.rpm" />
+			<copy todir="${packages}">
+				<fileset dir="${rpm}_@{rpmbuild}/RPMS" includes="**/*.rpm"/>
+			</copy>
 			<delete dir="${rpm}_@{rpmbuild}"/>
 		  </sequential>
 		</for>
@@ -892,14 +929,14 @@
 
 
 	<target name="mac-tar" depends="mac-old">
-		<exec executable="tar"> <!-- to preserve permissions -->
+		<exec executable="tar" failonerror="true"> <!-- to preserve permissions -->
 			<arg value="--numeric-owner"/>
 			<arg value="--owner=0"/>
 			<arg value="--group=0"/>
 			<arg value="-czf"/>
 			<arg value="${packages}/${macapp}-${version}.tar.gz"/>
 			<arg value="-C"/>
-			<arg value="${packages}"/>
+			<arg value="${packages}/mac-old"/>
 			<arg value="${macapp}"/>
 		</exec>
 	</target>
@@ -952,13 +989,14 @@
 	
 	
 
-	<target name="all" depends="dir,tar,zip,mac-embedded,mac-new,mac-old,wix,readme,rpm,deb">
+	<target name="all" depends="dir,tar,zip,readme">
 	</target>
 
 
 
 	<target name="clean">
 		<delete dir="${build}"/>
+		<delete dir="${build}-tests"/>
 		<delete dir="${dist}"/>
 		<delete dir="${debroot}"/>
 		<delete dir="${packages}"/>

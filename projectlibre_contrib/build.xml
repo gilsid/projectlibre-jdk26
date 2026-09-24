@@ -70,8 +70,7 @@
 		<if>
 		 <equals arg1="${shrink}" arg2="true" />
 		 <then>
-		 	<taskdef resource="proguard/ant/task.properties"
-		 	         classpath="ant-lib/proguard.jar" />
+		 	<fail message="ProGuard 4.8 cannot process Java 26 classes. Build with -Dshrink=false."/>
 		</then>
 	  </if>
 	</target>
@@ -80,7 +79,9 @@
 		<javac destdir="${build}"
 			classpathref="compile.class.path"
 			debug="off"
-			nowarn="on"
+			encoding="UTF-8"
+			includeantruntime="false"
+			failonerror="true"
 			release="26">
 				<src path="src" />
 				<include name="**/*" />
@@ -201,7 +202,9 @@
 				<jar jarfile="projectlibre-reports.jar">
 					<zipgroupfileset file="tmp/projectlibre-reports-tmp.jar" /> 
 					<zipgroupfileset file="lib/jasperreports/bsh.jar" /> 
-					<zipgroupfileset file="lib/jasperreports/jasperreports.jar" /> 
+					<zipgroupfileset file="lib/jasperreports/jasperreports.jar" />
+					<zipgroupfileset file="lib/jasperreports/xalan.jar" />
+					<zipgroupfileset file="lib/jasperreports/jdt-compiler.jar" />
 				</jar>
 			</else>
 	  </if>

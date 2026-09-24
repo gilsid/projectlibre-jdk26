@@ -100,10 +100,6 @@ public class GraphModel implements Serializable, /*ScheduleEventListener,*/ Cach
 		setCache(null);
 	}
 	
-	protected void finalize() throws Throwable {
-		super.finalize();
-		close();
-	}
 
 	
 	

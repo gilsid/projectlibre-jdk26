@@ -558,8 +558,15 @@ public class ProjectFactory {
 					Node node = (Node)i.next();
 					Project p = (Project)node.getImpl();
 					portfolio.handleExternalTasks(p,false,false); 		// external link handling
-					p.getResourcePool().removeProject(p);
+					ResourcePool resourcePool=p.getResourcePool();
+					if (resourcePool!=null) {
+						resourcePool.removeProject(p);
+						if (resourcePool.getProjects().isEmpty()) {
+							ResourcePoolFactory.getInstance().removePool(resourcePool);
+						}
+					}
 					p.disconnect();
+					p.dispose();
 					portfolio.getObjectEventManager().fireDeleteEvent(this,p);
 					portfolio.getNodeModel().remove(node,NodeModel.EVENT);
 

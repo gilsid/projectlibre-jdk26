@@ -331,7 +331,7 @@ public final class LocaleDialog extends AbstractDialog {
 					"".equals(code))
 				currentCountry=DEFAULT_COUNTRY;
 			else {
-			    Locale locale = new Locale("en", code);
+			    Locale locale = Locale.of("en", code);
 	        	currentCountry=new Country(code, locale.getDisplayCountry(locale));
 			}
 		}
@@ -343,7 +343,7 @@ public final class LocaleDialog extends AbstractDialog {
 	        countrySet.add(DEFAULT_COUNTRY);
 	        String[] countryCodes=Locale.getISOCountries();
 	        for (String countryCode: countryCodes) {
-			    Locale locale = new Locale("en", countryCode);
+			    Locale locale = Locale.of("en", countryCode);
 	        	countrySet.add(new Country(countryCode, locale.getDisplayCountry(locale)));
 	        }
 	        for (Country country: countrySet) {
@@ -618,17 +618,12 @@ public final class LocaleDialog extends AbstractDialog {
         	return;
 		
         ClassLoader cl = getClass().getClassLoader();
-        try {
-        	InputStream in = sibling.getResourceAsStream(file+".properties");
-            if (in == null)
+        try (InputStream in = sibling.getResourceAsStream(file+".properties")) {
+        	if (in == null)
                 throw new FileNotFoundException();
-            
-            byte[] buf = new byte[in.available()];
-            in.read(buf);
-            File target = new File(generatedDir,file+".properties");
-            OutputStream out = new FileOutputStream(target);
-            out.write(buf);
-            out.close();            	   
+            try (OutputStream out = new FileOutputStream(new File(generatedDir,file+".properties"))) {
+                in.transferTo(out);
+            }
         } catch (IOException e) {
         }
     }
@@ -638,16 +633,13 @@ public final class LocaleDialog extends AbstractDialog {
         	return;
 		
         ClassLoader cl = getClass().getClassLoader();
-        try {
-        	InputStream in = sibling.getResourceAsStream(file+".properties");        	
-            if (in == null)
-            	throw new FileNotFoundException();
-            
+        try (InputStream in = sibling.getResourceAsStream(file+".properties")) {
+        	if (in == null)
+                throw new FileNotFoundException();
             String text=getFileContent(in, "ISO-8859-1",true);
-            File target = new File(generatedDir,file+".txt");
-            FileWriter out = new FileWriter(target);
-            out.write(text);
-            out.close();            	   
+            try (FileWriter out = new FileWriter(new File(generatedDir,file+".txt"))) {
+                out.write(text);
+            }
         } catch (IOException e) {
         }
     }

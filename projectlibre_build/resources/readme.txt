@@ -1,7 +1,7 @@
 Running ProjectLibre @version_name@
 
 Requirements:
-	ProjectLibre uses Java version 6 or later.
+	ProjectLibre requires OpenJDK 26 or later.
 	To see what version you have, check out this page:
 	http://www.java.com/en/download/help/testvm.xml
 

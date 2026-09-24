@@ -137,7 +137,7 @@ public class Environment {
 	}
 	public static final boolean isWindows() {
 		//false for some linux window managers
-		return true;//System.getProperty("os.name").toUpperCase().contains("WINDOWS");
+		return System.getProperty("os.name", "").toLowerCase(Locale.ROOT).contains("win");
 	}
 	public static boolean isImporting() {
 		return importing;
@@ -185,7 +185,7 @@ public class Environment {
 	}
 	public static int getOs() {
 		if (os==-1){
-			String osName=System.getProperty("os.name").toLowerCase();
+			String osName=System.getProperty("os.name", "").toLowerCase(Locale.ROOT);
 			if (osName.startsWith("linux")) os=LINUX;
 			else if (osName.startsWith("mac os x")) os=MAC;
 			else os=0;

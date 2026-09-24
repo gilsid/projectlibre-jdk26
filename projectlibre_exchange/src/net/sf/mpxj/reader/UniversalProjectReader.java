@@ -167,14 +167,23 @@ public class UniversalProjectReader implements ProjectReader
          bis.skip(m_skipBytes);
          bis.mark(BUFFER_SIZE);
          byte[] buffer = new byte[BUFFER_SIZE];
-         int bytesRead = bis.read(buffer);
+         int bytesRead = 0;
+         while (bytesRead < BUFFER_SIZE)
+         {
+            int count = bis.read(buffer, bytesRead, BUFFER_SIZE - bytesRead);
+            if (count < 0)
+            {
+               break;
+            }
+            if (count == 0)
+            {
+               continue;
+            }
+            bytesRead += count;
+         }
          bis.reset();
 
-         //
-         // If the file is smaller than the buffer we are peeking into,
-         // it's probably not a valid schedule file.
-         //
-         if (bytesRead != BUFFER_SIZE)
+         if (bytesRead == 0)
          {
             return null;
          }
@@ -312,7 +321,8 @@ public class UniversalProjectReader implements ProjectReader
     */
    private boolean matchesFingerprint(byte[] buffer, byte[] fingerprint)
    {
-      return Arrays.equals(fingerprint, Arrays.copyOf(buffer, fingerprint.length));
+      return buffer.length >= fingerprint.length
+         && Arrays.equals(fingerprint, Arrays.copyOf(buffer, fingerprint.length));
    }
 
    /**

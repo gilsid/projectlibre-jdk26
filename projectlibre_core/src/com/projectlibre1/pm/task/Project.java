@@ -311,7 +311,7 @@ public class Project implements Document, BelongsToDocument, HasKey, HasPriority
 			NodeModel model=taskOutlines.getOutline(i);
 			if (model instanceof AssignmentNodeModel){
 				AssignmentNodeModel aModel=(AssignmentNodeModel)model;
-				aModel.setDocument(null); //remove ObjectListener
+				aModel.close(); //remove ObjectListener
 			}
 		}
 		disconnectDefaultOutline();

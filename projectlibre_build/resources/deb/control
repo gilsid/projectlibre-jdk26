@@ -4,7 +4,7 @@ Priority: optional
 Section: editors
 Architecture: all
 Installed-Size: 28352
-Depends: default-jre | openjdk-26-jre | openjdk-25-jre | openjdk-21-jre | openjdk-17-jre | openjdk-7-jre | openjdk-8-jre
+Depends: openjdk-26-jre
 Maintainer: Laurent Chretienneau <lchretienneau@projectlibre.org>
 Description: A desktop replacement for Microsoft Project
  It is capable of sharing files with Microsoft Project and has very similar

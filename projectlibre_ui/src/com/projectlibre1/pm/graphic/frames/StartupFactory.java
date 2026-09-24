@@ -58,6 +58,7 @@ package com.projectlibre1.pm.graphic.frames;
 import java.awt.Container;
 import java.awt.HeadlessException;
 import java.net.MalformedURLException;
+import java.net.URI;
 import java.net.URL;
 import java.util.HashMap;
 import java.util.Map;
@@ -163,11 +164,7 @@ public abstract class StartupFactory {
 //		System.out.println("---------- StartupFactory instanceFromNewSession#1 main");
 		Environment.setClientSide(true);
 
-		try {
-			System.setSecurityManager(null);
-		} catch (UnsupportedOperationException e) {
-			// JDK 24+ (JEP 411/486): SecurityManager is disabled/removed, nothing to clear.
-		}
+		// SecurityManager is removed on JDK 24+. There is no manager to clear.
 		Thread loadConfigThread=new Thread("loadConfig"){
 			public void run() {
 				long t=System.currentTimeMillis();
@@ -280,7 +277,7 @@ public abstract class StartupFactory {
 				URL loginUrl=null;
 				if (login==null||password==null){
 					try {
-						loginUrl=new URL(serverUrl+"/login");
+						loginUrl=URI.create(serverUrl+"/login").toURL();
 					} catch (MalformedURLException e) {}
 				}
 				LoginForm form = LoginDialog.doLogin(graphicManager.getFrame(),loginUrl); // it's actually a singleton
@@ -364,7 +361,7 @@ public abstract class StartupFactory {
 				Object basicService = ClassLoaderUtils.forName("javax.jnlp.ServiceManager").getMethod("lookup", new Class[]{String.class})
 				.invoke(null, new Object[] {"javax.jnlp.BasicService"});
 				ClassLoaderUtils.forName("javax.jnlp.BasicService").getMethod("showDocument", new Class[]{URL.class})
-				.invoke(basicService, new Object[] {new URL(jnlpUrl)});
+				.invoke(basicService, new Object[] {URI.create(jnlpUrl).toURL()});
 			} catch(Exception e) {
 				//e.printStackTrace();
 				// Not running in JavaWebStart or service is not supported.
@@ -373,7 +370,7 @@ public abstract class StartupFactory {
 			}
 //			try {
 //			BasicService basicService=(BasicService)ServiceManager.lookup("javax.jnlp.BasicService");
-//			basicService.showDocument(/*new URL(basicService.getCodeBase(),*/new URL(jnlpUrl));
+//			basicService.showDocument(/*new URL(basicService.getCodeBase(),*/URI.create(jnlpUrl).toURL());
 //			}catch (UnavailableServiceException e) {
 //			Runtime.getRuntime().exec("javaws ");
 //			}

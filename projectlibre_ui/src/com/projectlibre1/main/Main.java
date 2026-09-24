@@ -70,12 +70,15 @@ import com.projectlibre1.util.Environment;
  *
  */
 public class Main {
+	private static final String FIRST_RUN_KEY = "projectlibreFirstRun";
+	private static final String LEGACY_FIRST_RUN_KEY = "projectlibrefirstRun";
+
 	public static void main(String[] args) {
 		configureCrispText();
 		int runNumber=getRunNumber()+1;
 		long firstRun=getFirstRun();
 		Preferences.userNodeForPackage(Main.class).putInt("projectlibreRunNumber",runNumber);
-		Preferences.userNodeForPackage(Main.class).putLong("projectlibrefirstRun",firstRun);		
+		Preferences.userNodeForPackage(Main.class).putLong(FIRST_RUN_KEY,firstRun);		
 		System.setProperty("projectlibre.runNumber", runNumber+"");
 		System.setProperty("projectlibre.firstRun", firstRun+"");
 		System.setProperty("projectlibre.projectLibreRunNumber", getProjectLibreRunNumber()+"");
@@ -114,13 +117,18 @@ public class Main {
 		return Preferences.userNodeForPackage(Main.class).getInt("projectlibreRunNumber",0);
 	}
 	public static long getFirstRun() {
-		return Preferences.userNodeForPackage(Main.class).getLong("projectlibreFirstRun",System.currentTimeMillis());
+		Preferences preferences = Preferences.userNodeForPackage(Main.class);
+		long firstRun = preferences.getLong(FIRST_RUN_KEY, 0L);
+		if (firstRun == 0L) {
+			firstRun = preferences.getLong(LEGACY_FIRST_RUN_KEY, System.currentTimeMillis());
+		}
+		return firstRun;
 	}
 	public static int getProjectLibreRunNumber() {
-		return Preferences.userNodeForPackage(Main.class).getInt("runNumber",0);
+		return getRunNumber();
 	}
 	public static long getProjectLibreFirstRun() {
-		return Preferences.userNodeForPackage(Main.class).getLong("firstRun",System.currentTimeMillis());
+		return getFirstRun();
 	}
 	public static String getRunSinceMessage() {
 		return MessageFormat.format(Messages.getString("Text.runsSinceMessage"),new Object[] {getRunNumber(),new Date(getFirstRun())});

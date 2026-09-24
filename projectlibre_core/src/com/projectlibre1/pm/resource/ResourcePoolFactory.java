@@ -95,7 +95,7 @@ public class ResourcePoolFactory {
 		resourcePools.add(pool);
 	}
 	
-	private void removePool(ResourcePool pool) {
+	public void removePool(ResourcePool pool) {
 		resourcePools.remove(pool);
 	}
 

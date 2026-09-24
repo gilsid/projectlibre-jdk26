@@ -59,6 +59,7 @@ import java.io.ByteArrayInputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.net.URL;
+import java.nio.charset.StandardCharsets;
 
 import org.apache.commons.digester.Digester;
 import org.xml.sax.SAXException;
@@ -80,8 +81,8 @@ public class ConfigurationReader {
 		}
 		//log.info("Reading configuration from " + url + " " + new java.util.Date());
 		ProvidesDigesterEvents result = null;
-		try {
-			result = readStream(url.openStream(), root);
+		try (InputStream stream = url.openStream()) {
+			result = readStream(stream, root);
 		} catch (IOException e) {
 			log.error("Could not read field xml configuration file " + url);
 			e.printStackTrace();
@@ -93,20 +94,23 @@ public class ConfigurationReader {
 	public static ProvidesDigesterEvents readString(String str, ProvidesDigesterEvents root) {
 		if (str == null)
 			return root;
-	    ByteArrayInputStream in=new ByteArrayInputStream(str.getBytes());
+	    ByteArrayInputStream in=new ByteArrayInputStream(str.getBytes(StandardCharsets.UTF_8));
 		return ConfigurationReader.readStream(in,root);
 	}
 
 	public static ProvidesDigesterEvents readStream(InputStream stream, ProvidesDigesterEvents root) {
 		ProvidesDigesterEvents result = null;
 		Digester digester = new Digester();
-		digester.setNamespaceAware(true); // this is so we can use the JADE parser instead which is faster
-
-		digester.setValidating(false);
-		digester.push(root);
-		root.addDigesterEvents(digester);
-
 		try {
+			digester.setNamespaceAware(true); // this is so we can use the JADE parser instead which is faster
+			digester.setFeature("http://apache.org/xml/features/disallow-doctype-decl", true);
+			digester.setFeature("http://xml.org/sax/features/external-general-entities", false);
+			digester.setFeature("http://xml.org/sax/features/external-parameter-entities", false);
+			digester.setFeature("http://apache.org/xml/features/nonvalidating/load-external-dtd", false);
+
+			digester.setValidating(false);
+			digester.push(root);
+			root.addDigesterEvents(digester);
 			result = (ProvidesDigesterEvents) digester.parse(stream);
 		} catch (Exception e1) { //claur
 			log.error("Error parsing reading/parsing field xml configuration file.");

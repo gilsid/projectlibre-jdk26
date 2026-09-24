@@ -77,6 +77,7 @@ import com.jgoodies.forms.layout.FormLayout;
 import com.projectlibre1.pm.graphic.IconManager;
 import com.projectlibre1.strings.Messages;
 import com.projectlibre1.util.ClassLoaderUtils;
+import com.projectlibre1.util.SerializationFilter;
 
 public final class LoginDialog extends AbstractDialog {
 	private static final long serialVersionUID = 1L;
@@ -121,10 +122,10 @@ public final class LoginDialog extends AbstractDialog {
 			Object ps=ClassLoaderUtils.getLocalClassLoader().loadClass("javax.jnlp.ServiceManager").getMethod("lookup",new Class[]{String.class}).invoke(null,new Object[]{"javax.jnlp.PersistenceService"}); //$NON-NLS-1$ //$NON-NLS-2$ //$NON-NLS-3$
 //			Object ps=Class.forName("javax.jnlp.ServiceManager").getMethod("lookup",new Class[]{String.class}).invoke(null,new Object[]{"javax.jnlp.PersistenceService"});
 			Object contents=ps.getClass().getMethod("get",new Class[]{URL.class}).invoke(ps,new Object[]{serverUrl}); //$NON-NLS-1$
-			ObjectInputStream in=new ObjectInputStream((InputStream)ClassLoaderUtils.getLocalClassLoader().loadClass("javax.jnlp.FileContents").getMethod("getInputStream",null).invoke(contents,null)); //$NON-NLS-1$ //$NON-NLS-2$
-//			ObjectInputStream in=new ObjectInputStream((InputStream)Class.forName("javax.jnlp.FileContents").getMethod("getInputStream",null).invoke(contents,null));
-			form=(LoginForm)in.readObject();
-			in.close();
+			try (ObjectInputStream in=new ObjectInputStream((InputStream)ClassLoaderUtils.getLocalClassLoader().loadClass("javax.jnlp.FileContents").getMethod("getInputStream").invoke(contents))) { //$NON-NLS-1$ //$NON-NLS-2$
+				in.setObjectInputFilter(SerializationFilter.get());
+				form=(LoginForm)in.readObject();
+			}
 		} catch (Exception e) {}
 		
 		

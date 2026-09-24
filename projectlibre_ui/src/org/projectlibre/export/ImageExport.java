@@ -63,6 +63,7 @@ import java.awt.image.BufferedImage;
 import java.io.File;
 import java.io.FileOutputStream;
 import java.io.IOException;
+import java.util.Locale;
 
 import javax.imageio.ImageIO;
 import javax.swing.JFileChooser;
@@ -82,56 +83,81 @@ import com.projectlibre1.session.SessionFactory;
 public class ImageExport {
 	public static void export(final GraphPageable pageable,Component parentComponent) throws IOException{
 		final File file=chooseFile(pageable.getRenderer().getProject().getName(),parentComponent);
+		if (file == null) {
+			return;
+		}
 		final JobQueue jobQueue=SessionFactory.getInstance().getJobQueue();
 		Job job=new Job(jobQueue,"Image Export","Exporting Image...",true,parentComponent);
 		job.addRunnable(new JobRunnable("Image Export",1.0f){
-			public Object run() throws Exception{
-				boolean pdf=true;
-				if (file.getName().endsWith(".png"))
-					pdf=false;
-				Document document = null;
-				PdfWriter writer = null;
-				if (pdf){
-					document = new Document();
-					writer = PdfWriter.getInstance(document, new FileOutputStream(file));
-				}else{
-					
-				}
+				public Object run() throws Exception{
+				boolean pdf=!file.getName().toLowerCase(Locale.ROOT).endsWith(".png");
 				pageable.update();
 				int pageCount = pageable.getNumberOfPages();
-				
-				
-				if (pageCount>0){
-					ViewPrintable printable=pageable.getSafePrintable();
-					ExtendedPageFormat pageFormat=pageable.getSafePageFormat();
-					double width=pageFormat.getWidth();
-					double height=pageFormat.getHeight();
-					float startIncrement=0.1f;
-					float endIncrement=0.0f;						
-					float progressIncrement = (1.0f-startIncrement-endIncrement)/pageCount;
-					for (int p=0;p< pageCount;p++) {
-						setProgress(startIncrement+p*progressIncrement);
-						if (pdf){
-							document.setPageSize(new Rectangle((float)width,(float)height));
-							if (p==0)
-								document.open();
-							else document.newPage();
-							Graphics2D g = writer.getDirectContent().createGraphics((float)width, (float)height);
-							printable.print(g, p);
-							g.dispose();
-						}else{
-							BufferedImage bi = new BufferedImage((int)width, (int)height,BufferedImage.TYPE_INT_ARGB);
-							
-							Graphics2D g2 = (Graphics2D)bi.createGraphics();
+				if (pageCount == 0) {
+					setProgress(1.0f);
+					return null;
+				}
+
+				ViewPrintable printable=pageable.getSafePrintable();
+				ExtendedPageFormat pageFormat=pageable.getSafePageFormat();
+				double width=pageFormat.getWidth();
+				double height=pageFormat.getHeight();
+				float startIncrement=0.1f;
+				float endIncrement=0.0f;
+				float progressIncrement = (1.0f-startIncrement-endIncrement)/pageCount;
+				File tempFile=null;
+				try {
+					tempFile=AtomicExportFile.createSiblingTempFile(file);
+					if (pdf) {
+						try (FileOutputStream output = new FileOutputStream(tempFile)) {
+							Document document = new Document();
+							boolean documentOpen = false;
+							try {
+								PdfWriter writer = PdfWriter.getInstance(document, output);
+								for (int p=0;p< pageCount;p++) {
+									setProgress(startIncrement+p*progressIncrement);
+									document.setPageSize(new Rectangle((float)width,(float)height));
+									if (p==0) {
+										document.open();
+										documentOpen = true;
+									} else {
+										document.newPage();
+									}
+									Graphics2D g = writer.getDirectContent().createGraphics((float)width, (float)height);
+									try {
+										printable.print(g, p);
+									} finally {
+										g.dispose();
+									}
+								}
+							} finally {
+								if (documentOpen) {
+									document.close();
+								}
+							}
+						}
+					} else {
+						BufferedImage bi = new BufferedImage(Math.max(1, (int)Math.ceil(width)),
+								Math.max(1, (int)Math.ceil(height)), BufferedImage.TYPE_INT_ARGB);
+						Graphics2D g2 = bi.createGraphics();
+						try {
 							g2.setBackground(Color.WHITE);
-							printable.print(g2, p);
-				            g2.dispose();
-				            ImageIO.write(bi, "png", new FileOutputStream(file));
-				            break;
+							printable.print(g2, 0);
+						} finally {
+							g2.dispose();
+						}
+						try (FileOutputStream output = new FileOutputStream(tempFile)) {
+							if (!ImageIO.write(bi, "png", output)) {
+								throw new IOException("No PNG writer is available");
+							}
 						}
 					}
-					if (pdf)
-						document.close();
+					AtomicExportFile.replace(tempFile, file);
+					tempFile=null;
+				} finally {
+					if (tempFile != null) {
+						tempFile.delete();
+					}
 				}
 				setProgress(1.0f);
 				return null;
@@ -147,7 +173,7 @@ public class ImageExport {
     	if (chooser == null){
     		pdfFilter=new FileFilter(){
     		    public boolean accept(File f){
-    		    	return f.isDirectory()||f.getName().toLowerCase().endsWith(".pdf");
+    		    	return f.isDirectory()||f.getName().toLowerCase(Locale.ROOT).endsWith(".pdf");
     		    }
     		    public String getDescription(){
     		    	return "PDF (*.pdf)";
@@ -155,7 +181,7 @@ public class ImageExport {
     		};
     		pngFilter=new FileFilter(){
     		    public boolean accept(File f){
-    		    	return f.isDirectory()||f.getName().toLowerCase().endsWith(".png");
+    		    	return f.isDirectory()||f.getName().toLowerCase(Locale.ROOT).endsWith(".png");
     		    }
     		    public String getDescription(){
     		    	return "PNG (*.png)";
@@ -165,17 +191,28 @@ public class ImageExport {
     		chooser.putClientProperty("FileChooser.useShellFolder", Boolean.FALSE);
     		chooser.setDialogType(JFileChooser.SAVE_DIALOG);
     		chooser.addChoosableFileFilter(pdfFilter);
-    		//chooser.addChoosableFileFilter(pngFilter);
+    		chooser.addChoosableFileFilter(pngFilter);
     	}
-		if (projectName.length()==0)
+		if (projectName == null || projectName.length()==0)
 			projectName="project";
 		chooser.setSelectedFile(new File(projectName+".pdf"));
 		chooser.setFileFilter(pdfFilter);
 		if (chooser.showDialog(parentComponent, null) == JFileChooser.APPROVE_OPTION){
 			File file=chooser.getSelectedFile();
-			if (!file.getName().endsWith(".pdf")/*&&!file.getName().endsWith(".png")*/) file=new File(file.getName()+".pdf"); //add pdf extension if missing
-			return file;
+			String extension = chooser.getFileFilter().getDescription().startsWith("PNG") ? ".png" : ".pdf";
+			return withExtension(file, extension);
 		} else return null;
     }
+
+	private static File withExtension(File file, String extension) {
+		String name = file.getName().toLowerCase(Locale.ROOT);
+		if (name.endsWith(extension)) {
+			return file;
+		}
+		if (file.getParentFile() == null) {
+			return new File(file.getName() + extension);
+		}
+		return new File(file.getParentFile(), file.getName() + extension);
+	}
 
 }

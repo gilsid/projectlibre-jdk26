@@ -215,7 +215,7 @@ public class JobQueue extends ThreadGroup{
 			return null;
 		String methodName = documentBased ? "getDocumentFrameInstance" : "getFrameInstance";
 		try {
-		    return (Frame)Class.forName(GRAPHIC_MANAGER).getMethod(methodName,null).invoke(null,null);
+		    return (Frame)Class.forName(GRAPHIC_MANAGER).getMethod(methodName).invoke(null);
 		} catch (Exception e) {
 			e.printStackTrace();
 			return null;

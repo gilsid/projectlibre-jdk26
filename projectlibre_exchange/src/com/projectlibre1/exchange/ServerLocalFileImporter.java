@@ -83,6 +83,7 @@ import com.projectlibre1.session.Session;
 import com.projectlibre1.session.SessionFactory;
 import com.projectlibre1.strings.Messages;
 import com.projectlibre1.util.Environment;
+import com.projectlibre1.util.SerializationFilter;
 
 /**
  * Loads/Saves a project from/to a pod file
@@ -124,16 +125,24 @@ public class ServerLocalFileImporter extends ServerFileImporter {
     	        System.out.println("Loading "+importer.getFileName()+"..."); //$NON-NLS-1$ //$NON-NLS-2$
 
     	        long t1=System.currentTimeMillis();
-    	        ObjectInputStream in=new ObjectInputStream(new FileInputStream(importer.getFileName()));
+    	        try (ObjectInputStream in=new ObjectInputStream(new FileInputStream(importer.getFileName()))) {
+     	        	in.setObjectInputFilter(SerializationFilter.get());
     	        Object obj=in.readObject();
     	        if (obj instanceof String) obj=in.readObject(); //check version in the future
     	        projectData=(ProjectData)obj;
-    	        projectData.setMaster(false);
+     	        }
+    	        if (projectData==null) {
+     	        	throw new IllegalStateException("Project data is empty");
+     	        }
+     	        projectData.setMaster(false);
     	        projectData.setLocal(false);
     	        long t2=System.currentTimeMillis();
     	        System.out.println("Loading...Done in "+(t2-t1)+" ms"); //$NON-NLS-1$ //$NON-NLS-2$
 
     	        Collection<ResourceData> rs=(Collection<ResourceData>)projectData.getResources();
+     	        if (rs==null) {
+     	        	throw new IllegalStateException("Project data has no resources");
+     	        }
     	        List<EnterpriseResourceData> ers=new ArrayList<EnterpriseResourceData>(rs.size());
     	        for (ResourceData r: rs){
     	        	ers.add(r.getEnterpriseResource());
@@ -150,6 +159,9 @@ public class ServerLocalFileImporter extends ServerFileImporter {
     	job.addSwingRunnable(new JobRunnable("Import resources",1.0f){ //$NON-NLS-1$
 			public Object run() throws Exception{
 				ResourceMappingForm form=getResourceMapping();
+				if (form==null) {
+					throw new IllegalStateException("Resource mapping form is unavailable");
+				}
 				if (form!=null&&form.isLocal()) //if form==null we are in a case were have no server access. popup not needed
 					if (!job.okCancel(Messages.getString("Message.ServerUnreacheableReadOnlyProject"),true)){ //$NON-NLS-1$
 						setProgress(1.0f);
@@ -170,12 +182,18 @@ public class ServerLocalFileImporter extends ServerFileImporter {
     	        System.out.println("Deserializing..."); //$NON-NLS-1$
     	        long t1=System.currentTimeMillis();
     	        ResourceMappingForm form=getResourceMapping();
+    	        if (form==null) {
+    	        	throw new IllegalStateException("Resource mapping form is unavailable");
+    	        }
 //    	        project=serializer.deserializeProject(projectData,false,true,resourceMap);
     	        //DEF165936:  projectlibre1: .pod file import fails mapped to resource with modified calendar
     	        //pass the map into the serializer so it can grab the original impls
 //    	        serializer.SetStuffForPODDeserialization(form.getExistingProject(), _localResourceMap); //claur
     	        Project project=serializer.deserializeProject(projectData,false,null,null,null,false);
-    	        if (project!=null&&!Environment.getStandAlone()) project.setAllDirty();
+    	        if (project==null) {
+    	        	throw new IllegalStateException("Project data could not be deserialized");
+    	        }
+    	        if (!Environment.getStandAlone()) project.setAllDirty();
     	        importer.setProject(project);
     	        long t2=System.currentTimeMillis();
     	        System.out.println("Deserializing...Done in "+(t2-t1)+" ms"); //$NON-NLS-1$ //$NON-NLS-2$

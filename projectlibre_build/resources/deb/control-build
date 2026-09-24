@@ -2,13 +2,12 @@ Source: ProjectLibre
 Section: editors
 Priority: optional
 Maintainer: Laurent Chretienneau <lchretienneau@projectlibre.org>
-Build-Depends: debhelper (>= 5)
+Build-Depends: debhelper (>= 5), ant, openjdk-26-jdk
 Standards-Version: 3.7.2
 
 Package: projectlibre
 Architecture: any
-Depends: ${shlibs:Depends}, ${misc:Depends}, ant
-Depends: default-jdk | openjdk-26-jdk | openjdk-21-jdk | openjdk-17-jdk
+Depends: ${shlibs:Depends}, ${misc:Depends}, openjdk-26-jre
 Description: A desktop replacement for Microsoft Project
  It is capable of sharing files with Microsoft Project and has very similar
  functionality (Gantt, PERT diagram, histogram, charts, reports, detailed

@@ -72,7 +72,7 @@
 
 	<target name="prepare">
 		<mkdir dir="${build}"/>
-	 	<taskdef resource="net/sf/antcontrib/antcontrib.properties" classpath="../projectlibre_contrib/ant-lib/ant-contrib.jar"/>
+	 	<taskdef resource="net/sf/antcontrib/antcontrib.properties" classpath="../projectlibre_contrib/ant-lib/ant-contrib-1.jar"/>
 	</target>
 	
 	<target name="core">
@@ -103,7 +103,9 @@
 		<javac destdir="${build}"
 			classpathref="compile.class.path"
 			debug="off"
-			nowarn="on"
+			encoding="UTF-8"
+			includeantruntime="false"
+			failonerror="true"
 			release="26">
 				<src path="${src}" />
 				<include name="**/*" />

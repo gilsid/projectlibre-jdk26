@@ -19,7 +19,7 @@ VIProductVersion "1.7.0.0"
 !define CLASS "com.projectlibre1.main.Main"
 !define PRODUCT_NAME "ProjectLibre"
  
-; Definitions for Java 6.0
+; Definitions for Java 26
 !define JRE_VERSION "6.0"
 !define JRE_URL "http://javadl.sun.com/webapps/download/AutoDL?BundleId=68735"
  

@@ -35,6 +35,7 @@ import net.sf.mpxj.MPXJException;
 import net.sf.mpxj.ProjectFile;
 import net.sf.mpxj.common.FileHelper;
 import net.sf.mpxj.common.FixedLengthInputStream;
+import net.sf.mpxj.common.LimitedOutputStream;
 import net.sf.mpxj.common.StreamHelper;
 import net.sf.mpxj.listener.ProjectListener;
 import net.sf.mpxj.primavera.common.Blast;
@@ -45,6 +46,7 @@ import net.sf.mpxj.reader.AbstractProjectReader;
  */
 public final class P3PRXFileReader extends AbstractProjectReader
 {
+   private static final long MAX_EXTRACTED_FILE_BYTES = 256L * 1024 * 1024;
    @Override public void addProjectListener(ProjectListener listener)
    {
       if (m_projectListeners == null)
@@ -95,13 +97,27 @@ public final class P3PRXFileReader extends AbstractProjectReader
       byte[] fileName = new byte[13];
       byte[] dataSize = new byte[4];
 
-      stream.read(header);
-      stream.read(fileName);
-      stream.read(dataSize);
+      header = stream.readNBytes(8);
+      fileName = stream.readNBytes(13);
+      dataSize = stream.readNBytes(4);
+      if (header.length < 8 || fileName.length < 13 || dataSize.length < 4)
+      {
+         throw new IOException("Truncated P3 archive entry");
+      }
+
 
       int dataSizeValue = getInt(dataSize, 0);
+      if (dataSizeValue < 0 || dataSizeValue > MAX_EXTRACTED_FILE_BYTES)
+      {
+         throw new IOException("P3 archive entry is too large");
+      }
       String fileNameValue = getString(fileName, 0);
-      File file = new File(dir, fileNameValue);
+      File file = FileHelper.resolveContainedFile(dir, fileNameValue);
+      File parent = file.getParentFile();
+      if (parent != null && !parent.isDirectory() && !parent.mkdirs())
+      {
+         throw new IOException("Failed to create P3 archive directory");
+      }
 
       if (dataSizeValue == 0)
       {
@@ -109,11 +125,12 @@ public final class P3PRXFileReader extends AbstractProjectReader
       }
       else
       {
-         OutputStream os = new FileOutputStream(file);
-         FixedLengthInputStream inputStream = new FixedLengthInputStream(stream, dataSizeValue);
-         Blast blast = new Blast();
-         blast.blast(inputStream, os);
-         os.close();
+         try (FixedLengthInputStream inputStream = new FixedLengthInputStream(stream, dataSizeValue);
+              OutputStream os = new LimitedOutputStream(new FileOutputStream(file), MAX_EXTRACTED_FILE_BYTES))
+         {
+            Blast blast = new Blast();
+            blast.blast(inputStream, os);
+         }
       }
    }
 

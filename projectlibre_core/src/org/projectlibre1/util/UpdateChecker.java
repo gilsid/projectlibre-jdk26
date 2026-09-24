@@ -55,12 +55,11 @@
  *******************************************************************************/
 package org.projectlibre1.util;
 
-import groovy.lang.GroovyClassLoader;
-
-import java.io.BufferedReader;
 import java.io.InputStream;
-import java.io.InputStreamReader;
+import java.net.HttpURLConnection;
+import java.net.URI;
 import java.net.URL;
+import java.nio.charset.StandardCharsets;
 import java.net.URLEncoder;
 import java.text.MessageFormat;
 import java.util.Locale;
@@ -79,13 +78,14 @@ import com.projectlibre1.util.VersionUtils;
  * version: series of integers separated by dots
  * name: string
  *
- * %UpdateChecker
- * <groovy formula>
+ * The response is treated as untrusted data. Remote formulas are ignored;
+ * version comparison uses UpdateCheckerFormula's fixed comparator.
  */
 public class UpdateChecker {
 	private static final int UPDATE_CHECKER_VERSION=1;
-	private static final String updateAddress = "http://projectlibre.org/versions-"+UPDATE_CHECKER_VERSION; 
-	private static final String downloadAddress = "http://sourceforge.net/projects/projectlibre/files/latest/download";
+	private static final int MAX_UPDATE_RESPONSE_BYTES=4096;
+	private static final String updateAddress = "https://projectlibre.org/versions-"+UPDATE_CHECKER_VERSION; 
+	private static final String downloadAddress = "https://sourceforge.net/projects/projectlibre/files/latest/download";
 	private static void checkForUpdate() {
 		if (! Preferences.userNodeForPackage(UpdateChecker.class).getBoolean("checkForUpdates", true) ) {
 			return;
@@ -94,74 +94,78 @@ public class UpdateChecker {
 		if (thisVersion==null) thisVersion="0";
 		URL url;
 		try {
-//			System.out.println("Encoded: "+URLEncoder.encode(System.getProperty("java.vendor"),"UTF-8"));
+//			System.out.println("Encoded: "+URLEncoder.encode(System.getProperty("java.vendor"), StandardCharsets.UTF_8));
 //			System.exit(1);
 			//identify installed version, locale, jvm , to know if an update is available
-			url = new URL(updateAddress+
-					"?version="+URLEncoder.encode(thisVersion==null?"0":thisVersion,"UTF-8")+
-					"&locale="+URLEncoder.encode(Locale.getDefault().toString(),"UTF-8")+
-					"&timeZone="+URLEncoder.encode(TimeZone.getDefault().getID().toString(),"UTF-8")+
-					"&osName="+URLEncoder.encode(System.getProperty("os.name"),"UTF-8")+
-					"&osVersion="+URLEncoder.encode(System.getProperty("os.version"),"UTF-8")+
-					"&osArch="+URLEncoder.encode(System.getProperty("os.arch"),"UTF-8")+
-					"&javaVersion="+URLEncoder.encode(System.getProperty("java.version"),"UTF-8")+
-					"&javaVendor="+URLEncoder.encode(System.getProperty("java.vendor"),"UTF-8")+
-					"&validation="+URLEncoder.encode(System.getProperty("projectlibre.validation","0"),"UTF-8")+
-					"&runNumber="+URLEncoder.encode(System.getProperty("projectlibre.runNumber","0"),"UTF-8")+
-					"&firstRun="+URLEncoder.encode(System.getProperty("projectlibre.firstRun","0"),"UTF-8")+
-					"&openprojRunNumber="+URLEncoder.encode(System.getProperty("projectlibre.projectLibreRunNumber","0"),"UTF-8")+  //deprecated
-					"&openprojFirstRun="+URLEncoder.encode(System.getProperty("projectlibre.projectLibreFirstRun","0"),"UTF-8")+   //deprecated
-					"&projectLibreRunNumber="+URLEncoder.encode(System.getProperty("projectlibre.projectLibreRunNumber","0"),"UTF-8")+
-					"&projectLibreFirstRun="+URLEncoder.encode(System.getProperty("projectlibre.projectLibreFirstRun","0"),"UTF-8")+
-					"&email="+URLEncoder.encode(System.getProperty("projectlibre.userEmail","0"),"UTF-8")
-					); //$NON-NLS-1$
-			InputStream stream=  url.openStream();
-			BufferedReader in = new BufferedReader(
-					new InputStreamReader(
-					stream));
-			String latestVersion = in.readLine();
-			if (thisVersion==null){
-				in.close();
+			url = URI.create(updateAddress+
+					"?version="+URLEncoder.encode(thisVersion==null?"0":thisVersion, StandardCharsets.UTF_8)+
+					"&locale="+URLEncoder.encode(Locale.getDefault().toString(), StandardCharsets.UTF_8)+
+					"&timeZone="+URLEncoder.encode(TimeZone.getDefault().getID().toString(), StandardCharsets.UTF_8)+
+					"&osName="+URLEncoder.encode(System.getProperty("os.name"), StandardCharsets.UTF_8)+
+					"&osVersion="+URLEncoder.encode(System.getProperty("os.version"), StandardCharsets.UTF_8)+
+					"&osArch="+URLEncoder.encode(System.getProperty("os.arch"), StandardCharsets.UTF_8)+
+					"&javaVersion="+URLEncoder.encode(System.getProperty("java.version"), StandardCharsets.UTF_8)+
+					"&javaVendor="+URLEncoder.encode(System.getProperty("java.vendor"), StandardCharsets.UTF_8)+
+					"&validation="+URLEncoder.encode(System.getProperty("projectlibre.validation","0"), StandardCharsets.UTF_8)+
+					"&runNumber="+URLEncoder.encode(System.getProperty("projectlibre.runNumber","0"), StandardCharsets.UTF_8)+
+					"&firstRun="+URLEncoder.encode(System.getProperty("projectlibre.firstRun","0"), StandardCharsets.UTF_8)+
+					"&openprojRunNumber="+URLEncoder.encode(System.getProperty("projectlibre.projectLibreRunNumber","0"), StandardCharsets.UTF_8)+  //deprecated
+					"&openprojFirstRun="+URLEncoder.encode(System.getProperty("projectlibre.projectLibreFirstRun","0"), StandardCharsets.UTF_8)+   //deprecated
+					"&projectLibreRunNumber="+URLEncoder.encode(System.getProperty("projectlibre.projectLibreRunNumber","0"), StandardCharsets.UTF_8)+
+					"&projectLibreFirstRun="+URLEncoder.encode(System.getProperty("projectlibre.projectLibreFirstRun","0"), StandardCharsets.UTF_8)+
+					"&email="+URLEncoder.encode(System.getProperty("projectlibre.userEmail","0"), StandardCharsets.UTF_8)
+					).toURL(); //$NON-NLS-1$
+			if (!"https".equalsIgnoreCase(url.getProtocol())) {
 				return;
 			}
-			UpdateCheckerFormula f=new UpdateCheckerFormula();
-			if (f.mainCompare(thisVersion, latestVersion)>=0){
-				in.close();
-				return;
-			}
-			if (f.mainCompare(Preferences.userNodeForPackage(UpdateChecker.class).get("lastVersionChecked","-1"),latestVersion)>=0){
-				int runNumber = Preferences.userNodeForPackage(Class.forName("com.projectlibre1.main.Main")).getInt("projectlibreRunNumber",0);
-				int showEvery = Integer.parseInt(Messages.getString("UpdateDialog.showEvery"));
-				int showEveryStagger = Integer.parseInt(Messages.getString("UpdateDialog.showEveryStagger"));
-				if ((runNumber-showEveryStagger)%showEvery != 0) {
-					in.close();
-					return; //already asked
+			HttpURLConnection connection=(HttpURLConnection) url.openConnection();
+			connection.setConnectTimeout(5000);
+			connection.setReadTimeout(10000);
+			connection.setRequestMethod("GET");
+			try {
+				connection.connect();
+				try (InputStream input = connection.getInputStream()) {
+					byte[] response=input.readNBytes(MAX_UPDATE_RESPONSE_BYTES);
+					int lineEnd=0;
+					while (lineEnd<response.length && response[lineEnd]!='\n' && response[lineEnd]!='\r') {
+						lineEnd++;
+					}
+					if (lineEnd==response.length && response.length==MAX_UPDATE_RESPONSE_BYTES) {
+						return;
+					}
+					String latestVersion=new String(response, 0, lineEnd, StandardCharsets.UTF_8).trim();
+					if (latestVersion.isEmpty()) {
+						return;
+					}
+					UpdateCheckerFormula formula=new UpdateCheckerFormula();
+					if (formula.mainCompare(thisVersion, latestVersion)>=0) {
+						return;
+					}
+					String lastVersionChecked=Preferences.userNodeForPackage(UpdateChecker.class)
+							.get("lastVersionChecked","-1");
+					if (formula.mainCompare(lastVersionChecked, latestVersion)>=0) {
+						int runNumber=Preferences.userNodeForPackage(Class.forName("com.projectlibre1.main.Main"))
+								.getInt("projectlibreRunNumber",0);
+						int showEvery=Integer.parseInt(Messages.getString("UpdateDialog.showEvery"));
+						int showEveryStagger=Integer.parseInt(Messages.getString("UpdateDialog.showEveryStagger"));
+						if (showEvery > 0 && (runNumber-showEveryStagger)%showEvery != 0) {
+							return;
+						}
+					}
+
+					final String message=MessageFormat.format(Messages.getString("Text.newVersion"),
+							new Object[] {latestVersion,thisVersion});
+					Preferences.userNodeForPackage(UpdateChecker.class).put("lastVersionChecked", latestVersion);
+					SwingUtilities.invokeLater(new Runnable() {
+						public void run() {
+							if (Alert.okCancel(message)) {
+								BrowserControl.displayURL(downloadAddress);
+							}
+						}
+					});
 				}
-			}
-
-			String latestName = in.readLine();
-
-			StringBuffer formulaDef=new StringBuffer();
-			String s=null;
-			while ((s=in.readLine())!=null ){
-				if(s.trim().toUpperCase().equals("%UPDATECHECKER")) break;
-			}
-			if (s!=null){
-				while ((s=in.readLine())!=null){
-					formulaDef.append(s).append('\n');
-				}
-			}
-			in.close();
-
-			UpdateCheckerFormula formula=getFormula(formulaDef.toString().trim());
-			if (formula.mainCompare(thisVersion, latestVersion) < 0){
-				final String message = MessageFormat.format(Messages.getString("Text.newVersion"), new Object[] {latestVersion,thisVersion});
-				Preferences.userNodeForPackage(UpdateChecker.class).put("lastVersionChecked",latestVersion);
-				SwingUtilities.invokeLater(new Runnable() {
-					public void run() {
-						if (Alert.okCancel(message))
-							BrowserControl.displayURL(downloadAddress);
-					}});
+			} finally {
+				connection.disconnect();
 			}
 
 		} catch (Exception e) {
@@ -171,32 +175,14 @@ public class UpdateChecker {
 
 
 
-	private static UpdateCheckerFormula getFormula(String formulaDef){
-	    if (formulaDef.length()==0) return new UpdateCheckerFormula();
-	    StringBuffer classText=new StringBuffer();
-	    classText.append("package org.projectlibre1.util;\n");
-	    classText.append("public class UpdateCheckerFormulaImpl extends UpdateCheckerFormula{\n");
-	    classText.append("\tpublic int mainCompare(String currentVersion,String latestVersion){\n");
-	    classText.append("\t\t").append(formulaDef).append('\n');
-	    classText.append("\t}\n");
-	    classText.append("}\n");
-	    GroovyClassLoader loader = new GroovyClassLoader(UpdateChecker.class.getClassLoader());
-		try {
-			Class groovyClass = loader.parseClass(classText.toString()); //TODO this his horribly slow (~500ms)  Can we parse all at once or can we do this lazily or initialize in another thread?
-			return (UpdateCheckerFormula)groovyClass.newInstance();
-		} catch (Exception e) {
-			return new UpdateCheckerFormula();
-		}
-	}
-
-
-
-
 	public static void checkForUpdateInBackground() {
-		new Thread(new Runnable() {
+		Thread checker=new Thread(new Runnable() {
 			public void run() {
 				checkForUpdate();
-			}}).start();
+			}
+		}, "projectlibre-update-checker");
+		checker.setDaemon(true);
+		checker.start();
 	}
 
 }

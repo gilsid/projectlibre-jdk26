@@ -14,9 +14,13 @@ blurry on modern displays. This branch fixes both.
 ```bash
 cd projectlibre_build
 ant dist        # dist/projectlibre.jar + dist/lib/
+ant test        # offline regression checks
 ant dir         # runnable bundle under packages/projectlibre-1.9.8/
 ./packages/projectlibre-1.9.8/projectlibre.sh
 ```
+
+`ant all` builds the portable bundle only. Run `ant deb`, `ant rpm`, or
+`ant jpackage-dmg` explicitly on the matching packaging platform.
 
 Do not run the script in `resources/` directly. It is a template that the
 `dir` target copies next to the jars.
@@ -27,6 +31,13 @@ Do not run the script in `resources/` directly. It is a template that the
 - Two JDK 26 startup crashes fixed (`SecurityManager`, `java.applet`).
 - Linux uses the system look and feel with subpixel font smoothing instead
   of forced Metal, and the timeline header paints with LCD hints.
+- Launchers and packages require Java 26. Cached Java paths are checked again
+  after an upgrade.
+- Project saves use atomic replacement, and export paths keep the directory
+  selected by the user.
+- ZIP extraction, XML readers, update checks, and project deserialization have
+  explicit safety limits and trust boundaries.
+- `ant test` runs offline regression checks without contacting a server.
 
 ## Upstream credit
 

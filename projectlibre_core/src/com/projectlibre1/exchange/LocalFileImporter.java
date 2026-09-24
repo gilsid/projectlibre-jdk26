@@ -57,6 +57,7 @@ package com.projectlibre1.exchange;
 
 import java.io.BufferedInputStream;
 import java.io.BufferedOutputStream;
+import java.io.ByteArrayOutputStream;
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileNotFoundException;
@@ -66,6 +67,11 @@ import java.io.InputStream;
 import java.io.ObjectInputStream;
 import java.io.ObjectOutputStream;
 import java.io.OutputStream;
+import java.nio.charset.StandardCharsets;
+import java.nio.file.AtomicMoveNotSupportedException;
+import java.nio.file.FileAlreadyExistsException;
+import java.nio.file.Files;
+import java.nio.file.StandardCopyOption;
 import java.util.Scanner;
 
 import javax.swing.SwingUtilities;
@@ -78,12 +84,12 @@ import com.projectlibre1.pm.resource.ResourcePoolFactory;
 import com.projectlibre1.pm.task.Project;
 import com.projectlibre1.server.data.DataUtil;
 import com.projectlibre1.server.data.DocumentData;
-import com.projectlibre1.session.LoadOptions;
 import com.projectlibre1.session.LocalSession;
 import com.projectlibre1.session.SessionFactory;
 import com.projectlibre1.strings.Messages;
 import com.projectlibre1.undo.DataFactoryUndoController;
 import com.projectlibre1.util.Alert;
+import com.projectlibre1.util.SerializationFilter;
 
 /**
  * Loads/Saves a project from/to a pod file
@@ -119,6 +125,7 @@ public class LocalFileImporter extends FileImporter {
 
 				long t1=System.currentTimeMillis();
 				ObjectInputStream in=new ObjectInputStream(fin);
+				in.setObjectInputFilter(SerializationFilter.get());
 				Object obj=in.readObject();
 				if (obj instanceof String) obj=in.readObject(); //check version in the future
 				DocumentData projectData=(DocumentData)obj;
@@ -218,21 +225,30 @@ public class LocalFileImporter extends FileImporter {
 				if (found || xmlStartFound) {
 					//xml found
 					System.out.println("XML found");
-					final LoadOptions opt=new LoadOptions();
-					opt.setFileName(fileName);
-					opt.setLocal(true);
-					opt.setSync(false);
-					opt.setImporter(LocalSession.MICROSOFT_PROJECT_IMPORTER);
-					opt.setFileInputStream(in);
-					
-					SwingUtilities.invokeLater(new Runnable() {
-						
-						@Override
-						public void run() {
-							projectFactory.openProject(opt);
-							
-						}
-					});
+					// Parse the recovered XML in this importer so the outer load keeps its result.
+					FileImporter importer=LocalSession.getImporter(LocalSession.MICROSOFT_PROJECT_IMPORTER);
+					if (importer==null) {
+						throw new IOException("Microsoft project importer is unavailable");
+					}
+					DataFactoryUndoController undoController=new DataFactoryUndoController();
+					ResourcePool resourcePool=ResourcePoolFactory.getInstance().createResourcePool("",undoController);
+					resourcePool.setLocal(true);
+					Project recoveredProject=Project.createProject(resourcePool,undoController);
+					((DefaultNodeModel)recoveredProject.getTaskOutline()).setDataFactory(recoveredProject);
+					importer.setProject(recoveredProject);
+					importer.setFileName(fileName);
+					importer.setJobQueue(getJobQueue());
+					try {
+						project=importer.loadProject(in);
+					} finally {
+						in.close();
+					}
+					if (project==null) {
+						throw new IOException("XML recovery did not produce a project");
+					}
+					project.setFileName(fileName);
+					project.setMaster(true);
+					project.setLocal(true);
 //					project=projectFactory.openProject(opt);
 
 					
@@ -252,7 +268,7 @@ public class LocalFileImporter extends FileImporter {
 					//unable to recover from xml 
 		    		if ( ex!=null &&
 		    				ex instanceof ClassNotFoundException &&
-		    				ex.getMessage().equals("com.projity.server.data.ProjectData")) {
+		    				"com.projity.server.data.ProjectData".equals(ex.getMessage())) {
 		    			SwingUtilities.invokeLater(new Runnable(){
 		    				public void run(){
 				    			Alert.error(Messages.getString("Message.ImportOldFormatError"));
@@ -271,7 +287,6 @@ public class LocalFileImporter extends FileImporter {
 					if (ex!=null) throw ex;
 				}
 			} catch (Exception e) {
-				e.printStackTrace();
 				if (in!=null){
 					try {
 						in.close();
@@ -280,6 +295,7 @@ public class LocalFileImporter extends FileImporter {
 						e1.printStackTrace();
 					}
 				}
+				throw e;
 			}
         }
 	}
@@ -327,78 +343,76 @@ public class LocalFileImporter extends FileImporter {
 
 	@Override
 	public void exportFile() throws Exception{
+		if (fileName == null || fileName.length() == 0) {
+			throw new IOException("No output file was selected");
+		}
+
 		String extension="";
 		String name=fileName;
-		String tmpFileName=fileName;
-		int i=fileName.lastIndexOf('.');
-		if (i>0){
-			extension=fileName.substring(i);
-			name=fileName.substring(0, i);
+		int lastSeparator=Math.max(fileName.lastIndexOf(File.separatorChar), fileName.lastIndexOf('/'));
+		int extensionIndex=fileName.lastIndexOf('.');
+		if (extensionIndex>lastSeparator && extensionIndex>0){
+			extension=fileName.substring(extensionIndex);
+			name=fileName.substring(0, extensionIndex);
 		}
-		
-		File file=new File(fileName);
-		File tmpFile=file;
-		for (int count=0;tmpFile.exists();count++){
-			tmpFileName=name+"_tmp"+count+extension;
-			tmpFile=new File(tmpFileName);
-		}
-		
-		
 
-		boolean error=false;
-		
+		File file=new File(fileName);
+		File tmpFile;
+		int count=0;
+		do {
+			tmpFile=new File(name+"_tmp"+count+extension);
+			count++;
+		} while (tmpFile.exists());
+
 		try {
-			FileOutputStream fout=new FileOutputStream(tmpFile);
-			try {
-				DataUtil serializer=new DataUtil();
-				System.out.println("Serialization..."); //$NON-NLS-1$
-				long t1=System.currentTimeMillis();
-				DocumentData projectData=serializer.serializeDocument(getProject());
-				projectData.setMaster(true);
-				projectData.setLocal(true);
-				long t2=System.currentTimeMillis();
-				System.out.println("Serialization...Done in "+(t2-t1)+" ms"); //$NON-NLS-1$ //$NON-NLS-2$
-				System.out.println("Saving "+file+"..."); //$NON-NLS-1$ //$NON-NLS-2$
-				t1=System.currentTimeMillis();
-				ObjectOutputStream out=new ObjectOutputStream(fout);
+			DataUtil serializer=new DataUtil();
+			System.out.println("Serialization..."); //$NON-NLS-1$
+			long t1=System.currentTimeMillis();
+			DocumentData projectData=serializer.serializeDocument(getProject());
+			projectData.setMaster(true);
+			projectData.setLocal(true);
+			long t2=System.currentTimeMillis();
+			System.out.println("Serialization...Done in "+(t2-t1)+" ms"); //$NON-NLS-1$ //$NON-NLS-2$
+
+			ByteArrayOutputStream serializedData=new ByteArrayOutputStream();
+			try (ObjectOutputStream out=new ObjectOutputStream(serializedData)) {
 				out.writeObject(VERSION);
 				out.writeObject(projectData);
-				out.flush();
-				//out.close();
-				t2=System.currentTimeMillis();
-				System.out.println("Saving...Done in "+(t2-t1)+" ms"); //$NON-NLS-1$ //$NON-NLS-2$
-			} catch (Exception e) {
-				error=true;
-				e.printStackTrace();
 			}
-			try{
-				BufferedOutputStream bout=new BufferedOutputStream(fout);
-				bout.write(PROJECT_LIBRE_FILE_SEPARATOR.getBytes());
-				bout.flush();
+
+			System.out.println("Saving "+file+"..."); //$NON-NLS-1$ //$NON-NLS-2$
+			t1=System.currentTimeMillis();
+			try (FileOutputStream fout=new FileOutputStream(tmpFile);
+				 BufferedOutputStream bout=new BufferedOutputStream(fout)) {
+				bout.write(serializedData.toByteArray());
+				bout.write(PROJECT_LIBRE_FILE_SEPARATOR.getBytes(StandardCharsets.UTF_8));
 				FileImporter importer=LocalSession.getImporter("com.projectlibre1.exchange.MicrosoftImporter");
-				importer.saveProject(project, bout);
-				bout.flush();
-				
-			}catch (Exception e) {
-				error=true;
-				e.printStackTrace();
+				if (!importer.saveProject(project, bout)) {
+					throw new IOException("Project data could not be written");
+				}
 			}
-			fout.close();
+			moveFile(tmpFile, file);
+			t2=System.currentTimeMillis();
+			System.out.println("Saving...Done in "+(t2-t1)+" ms"); //$NON-NLS-1$ //$NON-NLS-2$
 		} catch (Exception e) {
-			error=true;
-			e.printStackTrace();
+			tmpFile.delete();
+			final String message=Messages.getString("Message.saveErrorTmpFile")+tmpFile.getPath();
+			SwingUtilities.invokeLater(new Runnable() {
+				public void run() {
+					Alert.error(message);
+				}
+			});
+			throw e;
 		}
+	}
 
-		//Don't replace original file if an error occurred
-		if (error){
-			if (file.equals(tmpFile))
-				Alert.error(Messages.getString("Message.saveError"));
-			else Alert.error(Messages.getString("Message.saveErrorTmpFile")+tmpFileName);
-		}else if (!file.equals(tmpFile)){
-			file.delete();
-			tmpFile.renameTo(file);
+	private static void moveFile(File source, File target) throws IOException {
+		try {
+			Files.move(source.toPath(), target.toPath(),
+					StandardCopyOption.ATOMIC_MOVE, StandardCopyOption.REPLACE_EXISTING);
+		} catch (AtomicMoveNotSupportedException | FileAlreadyExistsException e) {
+			Files.move(source.toPath(), target.toPath(), StandardCopyOption.REPLACE_EXISTING);
 		}
-
 	}
 
 

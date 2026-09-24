@@ -68,6 +68,7 @@ import com.projectlibre1.pm.calendar.WorkCalendar;
 import com.projectlibre1.pm.resource.EnterpriseResource;
 import com.projectlibre1.pm.resource.ResourceImpl;
 import com.projectlibre1.session.Session;
+import com.projectlibre1.util.SerializationFilter;
 
 /**
  *
@@ -86,9 +87,9 @@ public class SerializeUtil {
     }
 
     public static Object deserializeFromByteArray(byte[] bytes) throws IOException, ClassNotFoundException {
-        ByteArrayInputStream bin=new ByteArrayInputStream(bytes);
-        ObjectInputStream in=new ObjectInputStream(bin);
-        return in.readObject();
+        try (ObjectInputStream in = createObjectInputStream(new ByteArrayInputStream(bytes))) {
+            return in.readObject();
+        }
     }
 
     public static SerializedDataObject serialize(DataObject data, SerializedDataObjectFactory factory) throws IOException{
@@ -114,13 +115,27 @@ public class SerializeUtil {
     }
 
     public static DataObject deserialize(SerializedDataObject sdata,Session session) throws IOException,ClassNotFoundException{
-    	ByteArrayInputStream bin=new ByteArrayInputStream(sdata.getSerialized());
-        ObjectInputStream in;
-		if (ZIP&&(sdata.getType()==DataObjectConstants.CALENDAR_TYPE||sdata.getType()==DataObjectConstants.ENTERPRISE_RESOURCE_TYPE||sdata.getType()==DataObjectConstants.RESOURCE_TYPE)){
-        	ZipInputStream zin=new ZipInputStream(bin);
-            zin.getNextEntry();
-            in=new ObjectInputStream(zin);
-        } else in=new ObjectInputStream(bin);
+        ByteArrayInputStream bin=new ByteArrayInputStream(sdata.getSerialized());
+        if (ZIP&&(sdata.getType()==DataObjectConstants.CALENDAR_TYPE||sdata.getType()==DataObjectConstants.ENTERPRISE_RESOURCE_TYPE||sdata.getType()==DataObjectConstants.RESOURCE_TYPE)){
+            try (ZipInputStream zin=new ZipInputStream(bin);
+                 ObjectInputStream in=createObjectInputStream(zin)) {
+                zin.getNextEntry();
+                return readData(in, sdata, session);
+            }
+        }
+        try (ObjectInputStream in=createObjectInputStream(bin)) {
+            return readData(in, sdata, session);
+        }
+    }
+
+    private static ObjectInputStream createObjectInputStream(java.io.InputStream input) throws IOException {
+        ObjectInputStream in=new ObjectInputStream(input);
+        in.setObjectInputFilter(SerializationFilter.get());
+        return in;
+    }
+
+    private static DataObject readData(ObjectInputStream in, SerializedDataObject sdata, Session session)
+            throws IOException, ClassNotFoundException {
         DataObject data=(DataObject)in.readObject();
         data.setUniqueId(session==null?sdata.getUniqueId():session.getId());
         data.setName(sdata.getName());

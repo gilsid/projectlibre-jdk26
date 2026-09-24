@@ -445,6 +445,10 @@ public class Job extends Thread {
 	}
 
 	public void warm(final String message,boolean wait){
+		if (wait && SwingUtilities.isEventDispatchThread()) {
+			Alert.warn(message);
+			return;
+		}
 		final Mutex alertMutex=new Mutex();
 		if (wait) alertMutex.lock();
 		SwingUtilities.invokeLater(new Runnable(){
@@ -456,6 +460,10 @@ public class Job extends Thread {
 		if (wait) alertMutex.waitUntilUnlocked();
 	}
 	public void error(final String message,boolean wait){
+		if (wait && SwingUtilities.isEventDispatchThread()) {
+			Alert.error(message);
+			return;
+		}
 		final Mutex alertMutex=new Mutex();
 		if (wait) alertMutex.lock();
 		SwingUtilities.invokeLater(new Runnable(){
@@ -470,6 +478,9 @@ public class Job extends Thread {
 		int result;
 	};
 	public int confirm(final String message,boolean wait){
+		if (wait && SwingUtilities.isEventDispatchThread()) {
+			return Alert.confirm(message);
+		}
 		final Mutex alertMutex=new Mutex();
 		final IntResultHolder result=new IntResultHolder();
 		if (wait) alertMutex.lock();
@@ -486,6 +497,9 @@ public class Job extends Thread {
 		boolean result;
 	};
 	public boolean okCancel(final String message,boolean wait){
+		if (wait && SwingUtilities.isEventDispatchThread()) {
+			return Alert.okCancel(message);
+		}
 		final Mutex alertMutex=new Mutex();
 		final BooleanResultHolder result=new BooleanResultHolder();
 		if (wait) alertMutex.lock();
@@ -503,6 +517,9 @@ public class Job extends Thread {
 		String result;
 	};
 	public String renameProject(final String name,final Set projectNames,boolean wait,final boolean saveAs){
+		if (wait && SwingUtilities.isEventDispatchThread()) {
+			return Alert.renameProject(name, projectNames, saveAs);
+		}
 		final Mutex alertMutex=new Mutex();
 		final StringResultHolder result=new StringResultHolder();
 		if (wait) alertMutex.lock();

@@ -81,7 +81,7 @@
 			<string>$JAVAROOT/lib/projectlibre-script.jar</string>
 		</array>
 		<key>JVMVersion</key>
-		<string>1.6+</string>
+		<string>26+</string>
 		<key>MainClass</key>
 		<string>com.projectlibre1.main.Main</string>
 		<key>VMOptions</key>

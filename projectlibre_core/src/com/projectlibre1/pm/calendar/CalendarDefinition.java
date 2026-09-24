@@ -208,6 +208,9 @@ public class CalendarDefinition implements WorkCalendar, Cloneable {
 		if (elapsed) { // elapsed times do not use calendars, though the result must fall within working time
 			result = adjustInsideCalendar(date + duration,useSooner);
 		} else {
+			if (week == null || week.getDuration() <= 0) {
+				throw new IllegalArgumentException("Calendar has no working time");
+			}
 			if (duration < 0) {
 				forward = false;
 				duration = -duration;

@@ -55,7 +55,10 @@
  *******************************************************************************/
 package com.projectlibre1.field;
 
+import java.text.DateFormat;
+import java.text.NumberFormat;
 import java.text.ParseException;
+import java.text.ParsePosition;
 import java.util.Calendar;
 import java.util.Date;
 import java.util.GregorianCalendar;
@@ -265,11 +268,16 @@ public class FieldConverter  {
 			} else if (value instanceof Calendar) {
 				return ((Calendar)value).getTime();
 			} else if (value instanceof String) {
+				String text=((String)value).trim();
 				try {
-					return EditOption.getInstance().getDateFormat().parse((String)value);
+					DateFormat format=(DateFormat) EditOption.getInstance().getDateFormat().clone();
+					format.setLenient(false);
+					return parseFully(text, format);
 				} catch (ParseException e) {
 					try {
-						return DateTime.utcShortDateFormatInstance().parse((String)value); // try without time
+						DateFormat format=DateTime.utcShortDateFormatInstance();
+						format.setLenient(false);
+						return parseFully(text, format); // try without time
 					} catch (ParseException e1) {
 						throw new ConversionException(Messages.getString("Message.invalidDate"));
 					}
@@ -280,6 +288,15 @@ public class FieldConverter  {
 		}
 	};		
 		
+	private static Date parseFully(String value, DateFormat format) throws ParseException {
+		ParsePosition position=new ParsePosition(0);
+		Date result=format.parse(value, position);
+		if (result==null || position.getIndex()!=value.length()) {
+			throw new ParseException("Unparsed text remains", position.getErrorIndex());
+		}
+		return result;
+	}
+
 	// GregorianCalendar converter
 	private static class CalendarConverter implements Converter {
 		private static DateConverter dateConverter = new DateConverter();
@@ -388,7 +405,12 @@ public class FieldConverter  {
 				return Money.getInstance(num);
 			} else if (value instanceof String) {
 				try {
-					return Money.getFormat(false).parseObject((String) value);
+					NumberFormat format=(NumberFormat) Money.getFormat(false).clone();
+					Number parsed=(Number) format.parseObject((String) value);
+					if (parsed==null) {
+						throw new ParseException("Empty money value", 0);
+					}
+					return Money.getInstance(parsed.doubleValue());
 				} catch (ParseException e) {
 					throw new ConversionException(Messages.getString("Message.invalidDuration"));
 				}

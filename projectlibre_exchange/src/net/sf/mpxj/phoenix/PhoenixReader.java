@@ -131,6 +131,12 @@ public final class PhoenixReader extends AbstractProjectReader
          m_eventManager.addProjectListeners(m_projectListeners);
 
          SAXParserFactory factory = SAXParserFactory.newInstance();
+         factory.setNamespaceAware(true);
+         factory.setFeature("http://apache.org/xml/features/disallow-doctype-decl", true);
+         factory.setFeature("http://xml.org/sax/features/external-general-entities", false);
+         factory.setFeature("http://xml.org/sax/features/external-parameter-entities", false);
+         factory.setFeature("http://apache.org/xml/features/nonvalidating/load-external-dtd", false);
+         factory.setXIncludeAware(false);
          SAXParser saxParser = factory.newSAXParser();
          XMLReader xmlReader = saxParser.getXMLReader();
          SAXSource doc = new SAXSource(xmlReader, new InputSource(new SkipNulInputStream(stream)));

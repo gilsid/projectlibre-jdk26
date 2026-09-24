@@ -136,10 +136,6 @@ public class SpreadSheet extends CommonSpreadSheet implements Cloneable {
 		NodeListTransferHandler.registerWith(this);
 
 	}
-
-	protected void finalize() {
-		System.out.println("SpreadSheet.finalize()" + this);
-	}
 	public void cleanUp() {
 		if (getModel() instanceof CommonSpreadSheetModel)
 			((CommonSpreadSheetModel) getModel()).getCache().removeNodeModelListener(this);

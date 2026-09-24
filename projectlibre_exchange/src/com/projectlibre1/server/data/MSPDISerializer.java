@@ -56,9 +56,13 @@
 package com.projectlibre1.server.data;
 
 import java.io.File;
-import java.io.FileNotFoundException;
 import java.io.FileOutputStream;
+import java.io.IOException;
 import java.io.OutputStream;
+import java.nio.file.AtomicMoveNotSupportedException;
+import java.nio.file.FileAlreadyExistsException;
+import java.nio.file.Files;
+import java.nio.file.StandardCopyOption;
 import java.util.Iterator;
 import java.util.LinkedList;
 import java.util.Map;
@@ -86,8 +90,6 @@ import com.projectlibre1.pm.task.NormalTask;
 import com.projectlibre1.pm.task.Project;
 import com.projectlibre1.pm.task.Task;
 import com.projectlibre1.pm.task.TaskSnapshot;
-import com.projectlibre1.strings.Messages;
-import com.projectlibre1.util.Alert;
 
 import net.sf.mpxj.ProjectCalendar;
 import net.sf.mpxj.ProjectFile;
@@ -308,38 +310,53 @@ public class MSPDISerializer implements ProjectSerializer {
      }
     
 	public boolean saveProject(Project project,String fileName) {
+		if (fileName == null || fileName.length() == 0) {
+			return false;
+		}
+
 		String extension="";
 		String name=fileName;
-		String tmpFileName=fileName;
-		int i=fileName.lastIndexOf('.');
-		if (i>0){
-			extension=fileName.substring(i);
-			name=fileName.substring(0, i);
+		int lastSeparator=Math.max(fileName.lastIndexOf(File.separatorChar), fileName.lastIndexOf('/'));
+		int extensionIndex=fileName.lastIndexOf('.');
+		if (extensionIndex>lastSeparator && extensionIndex>0){
+			extension=fileName.substring(extensionIndex);
+			name=fileName.substring(0, extensionIndex);
 		}
-		
+
 		File file=new File(fileName);
-		File tmpFile=file;
-		for (int count=0;tmpFile.exists();count++){
-			tmpFileName=name+"_tmp"+count+extension;
-			tmpFile=new File(tmpFileName);
-		}
-		
-		
-		try {
-			if (saveProject(project,new FileOutputStream(tmpFile))
-					 && tmpFile.length()>0){
-				if (!file.equals(tmpFile)){
-					file.delete();
-					tmpFile.renameTo(file);
-				}
-				return true;
+		File tmpFile;
+		int count=0;
+		do {
+			tmpFile=new File(name+"_tmp"+count+extension);
+			count++;
+		} while (tmpFile.exists());
+
+		try (FileOutputStream output = new FileOutputStream(tmpFile)) {
+			if (!saveProject(project, output) || tmpFile.length() == 0) {
+				tmpFile.delete();
+				return false;
 			}
-		} catch (FileNotFoundException e) {
+		} catch (IOException e) {
+			tmpFile.delete();
+			return false;
 		}
-		if (file.equals(tmpFile))
-			Alert.error(Messages.getString("Message.saveError"));
-		else Alert.error(Messages.getString("Message.saveErrorTmpFile")+tmpFileName);
-		return false;
+
+		try {
+			moveFile(tmpFile, file);
+			return true;
+		} catch (IOException e) {
+			tmpFile.delete();
+			return false;
+		}
+	}
+
+	private static void moveFile(File source, File target) throws IOException {
+		try {
+			Files.move(source.toPath(), target.toPath(),
+					StandardCopyOption.ATOMIC_MOVE, StandardCopyOption.REPLACE_EXISTING);
+		} catch (AtomicMoveNotSupportedException | FileAlreadyExistsException e) {
+			Files.move(source.toPath(), target.toPath(), StandardCopyOption.REPLACE_EXISTING);
+		}
 	}
 
 	public boolean saveProject(Project project,OutputStream out) {

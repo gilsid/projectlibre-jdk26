@@ -85,7 +85,7 @@ public class Main {
 			String javaExec=ConfigurationFile.getRunProperty("JAVA_EXE");
 			//check jvm
 			String javaVersion=System.getProperty("java.version");
-			if (Environment.compareJavaVersion(javaVersion,"1.5")<0){
+			if (Environment.compareJavaVersion(javaVersion,"26")<0){
 				String message=Messages.getStringWithParam("Text.badJavaVersion", javaVersion);
 				if (javaExec!=null&&javaExec.length()>0) message+="\n"+Messages.getStringWithParam("Text.javaExecutable", new Object[]{javaExec,"JAVA_EXE","$HOME/.projectlibre/run.conf"});
 				if (!opts.containsKey("silentlyFail")) JOptionPane.showMessageDialog(null,message, Messages.getContextString("Title.ProjectLibreError"),JOptionPane.ERROR_MESSAGE);

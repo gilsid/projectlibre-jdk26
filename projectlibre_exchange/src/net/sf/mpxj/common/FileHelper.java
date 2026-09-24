@@ -25,6 +25,8 @@ package net.sf.mpxj.common;
 
 import java.io.File;
 import java.io.IOException;
+import java.nio.file.Files;
+import java.nio.file.Path;
 
 /**
  * Common helper methods for working with files.
@@ -56,6 +58,15 @@ public final class FileHelper
    {
       if (file != null)
       {
+         if (Files.isSymbolicLink(file.toPath()))
+         {
+            try {
+               Files.deleteIfExists(file.toPath());
+            } catch (IOException e) {
+               // best-effort cleanup
+            }
+            return;
+         }
          if (file.isDirectory())
          {
             File[] children = file.listFiles();
@@ -98,6 +109,29 @@ public final class FileHelper
       {
          file.mkdirs();
       }
+   }
+
+   /**
+    * Resolve an archive entry and ensure it remains inside the destination directory.
+    *
+    * @param directory destination directory
+    * @param entryName entry name
+    * @return resolved file
+    * @throws IOException if the entry escapes the destination
+    */
+   public static File resolveContainedFile(File directory, String entryName) throws IOException
+   {
+      if (directory == null || entryName == null || entryName.length() == 0)
+      {
+         throw new IOException("Archive entry has no destination name");
+      }
+      Path root = directory.toPath().toRealPath();
+      Path target = root.resolve(entryName).normalize();
+      if (!target.startsWith(root))
+      {
+         throw new IOException("Archive entry escapes the destination directory: " + entryName);
+      }
+      return target.toFile();
    }
 
    /**

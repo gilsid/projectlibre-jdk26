@@ -277,7 +277,7 @@ public class GraphicManager implements  FrameHolder, NamedFrameListener, WindowS
 			else if (c.getName() != null && c.getName().endsWith("BootstrapApplet") && c.getClass().getName().endsWith("BootstrapApplet")){
 				System.out.println("applet: "+c.getClass().getName());
 				try {
-					FrameHolder holder=(FrameHolder)Class.forName("com.projectlibre1.bootstrap.BootstrapApplet.class").getMethod("getObject", null).invoke(c, null);
+					FrameHolder holder=(FrameHolder)Class.forName("com.projectlibre1.bootstrap.BootstrapApplet.class").getMethod("getObject").invoke(c);
 					return holder.getGraphicManager();
 				} catch (Exception e) {
 					return null;
@@ -346,7 +346,7 @@ public class GraphicManager implements  FrameHolder, NamedFrameListener, WindowS
 //		else if (container instanceof BootstrapApplet){
 		else{
 			try {
-				FrameHolder holder=(FrameHolder)Class.forName("com.projectlibre1.bootstrap.BootstrapApplet").getMethod("getObject", null).invoke(container, null);
+				FrameHolder holder=(FrameHolder)Class.forName("com.projectlibre1.bootstrap.BootstrapApplet").getMethod("getObject").invoke(container);
 				holder.setGraphicManager(this);
 			} catch (Exception e) {
 			}
@@ -355,11 +355,6 @@ public class GraphicManager implements  FrameHolder, NamedFrameListener, WindowS
 	}
 	public GraphicManager(Container container) {
 		this(/*null,*/ server,container);
-	}
-
-	protected void finalize() throws Throwable {
-//		System.out.println("~~~~~~~~~~~~~~~~ GraphicManager.finalize()");
-		super.finalize();
 	}
 
 	public void cleanUp() {
@@ -1915,7 +1910,7 @@ protected boolean loadLocalDocument(String fileName,boolean merge){ //uses serve
 				}
 			});
 
-			if (fileName.endsWith(".pod")){ //$NON-NLS-1$
+			if (fileName.toLowerCase(Locale.ROOT).endsWith(".pod")){ //$NON-NLS-1$
 				opt.setImporter(Environment.getStandAlone()?LocalSession.LOCAL_PROJECT_IMPORTER:LocalSession.SERVER_LOCAL_PROJECT_IMPORTER);
 			}else opt.setImporter(LocalSession.MICROSOFT_PROJECT_IMPORTER);
 			project=projectFactory.openProject(opt);
@@ -1940,7 +1935,7 @@ protected boolean loadLocalDocument(String fileName,boolean merge){ //uses serve
 				}
 			});
 		}
-		if (fileName.endsWith(".pod")){ //$NON-NLS-1$
+		if (fileName.toLowerCase(Locale.ROOT).endsWith(".pod")){ //$NON-NLS-1$
 			opt.setFileName(fileName);
 			opt.setImporter(LocalSession.LOCAL_PROJECT_IMPORTER);
 		}

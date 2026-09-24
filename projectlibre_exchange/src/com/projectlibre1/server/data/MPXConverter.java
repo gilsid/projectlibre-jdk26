@@ -319,20 +319,24 @@ public class MPXConverter {
     	if (delay != 0) {
     		// mpxj uses default options when dealing with assignment delay
     		CalendarOption oldOptions = CalendarOption.getInstance();
-    		CalendarOption.setInstance(CalendarOption.getDefaultInstance());
-
-        	mpxAssignment.setDelay(MPXConverter.toMPXDuration(assignment.getDelay()));
-            CalendarOption.setInstance(oldOptions);
+    		try {
+    			CalendarOption.setInstance(CalendarOption.getDefaultInstance());
+    			mpxAssignment.setDelay(MPXConverter.toMPXDuration(assignment.getDelay()));
+    		} finally {
+    			CalendarOption.setInstance(oldOptions);
+    		}
     	}
 
     	long levelingDelay = Duration.millis(assignment.getLevelingDelay());
     	if (levelingDelay != 0) {
     		// mpxj uses default options when dealing with assignment delay
     		CalendarOption oldOptions = CalendarOption.getInstance();
-    		CalendarOption.setInstance(CalendarOption.getDefaultInstance());
-
-        	mpxAssignment.setDelay(MPXConverter.toMPXDuration(assignment.getLevelingDelay()));
-            CalendarOption.setInstance(oldOptions);
+    		try {
+    			CalendarOption.setInstance(CalendarOption.getDefaultInstance());
+    			mpxAssignment.setLevelingDelay(MPXConverter.toMPXDuration(assignment.getLevelingDelay()));
+    		} finally {
+    			CalendarOption.setInstance(oldOptions);
+    		}
     	}
 
 

@@ -57,6 +57,7 @@ package com.projectlibre1.session;
 
 import java.util.Collection;
 import java.util.List;
+import java.util.Locale;
 
 import org.apache.commons.collections.Closure;
 
@@ -140,6 +141,9 @@ public class LocalSession extends AbstractSession{
 	        job.addRunnable(new JobRunnable("LocalAccess: loadProject.end",1.0f){
 	    		public Object run() throws Exception{
 	    	    	Project project=importer.getProject();
+	    	    	if (project==null) {
+	    	    		throw new IllegalStateException("Project import did not produce a project");
+	    	    	}
 	    	    	project.setFileName(opt.getFileName()); //overrides project name
 	    			if (MICROSOFT_PROJECT_IMPORTER.equals(opt.getImporter()))
 	    				project.getResourcePool().setName(project.getName());
@@ -198,27 +202,31 @@ public class LocalSession extends AbstractSession{
 //		importer.setJobQueue(jobQueue);
 //		importer.setProjectFactory(ProjectFactory.getInstance());//used?
 		int count=projs.size();
-		int i=0;
-		for (final Project project : projs) {
-			//if projs.size()>1 opt.getFileName() must be null
-			String fileN=(opt.getFileName()==null)?project.getGuessedFileName():opt.getFileName();//+(count>1?("("+i+")"):""));
-			if (!FileHelper.isFileNameAllowed(fileN, true)){
+		for (int i=0; i<count; i++) {
+			final Project project=projs.get(i);
+			String fileN;
+			if (opt.getFileName()!=null && count==1) {
+				fileN=opt.getFileName();
+			} else {
+				fileN=project.getGuessedFileName();
+				if (fileN!=null && count>1) {
+					int extensionIndex=fileN.lastIndexOf('.');
+					String base=extensionIndex>0 ? fileN.substring(0, extensionIndex) : fileN;
+					String extension=extensionIndex>0 ? fileN.substring(extensionIndex) : "";
+					fileN=base+"-"+(i+1)+extension;
+				}
+			}
+			if (fileN!=null && !FileHelper.isFileNameAllowed(fileN, true)){
 				fileN=SessionFactory.getInstance().getLocalSession().chooseFileName(true,FileHelper.changeFileExtension(fileN, /*project.getFileType()*/FileHelper.PROJECTLIBRE_FILE_TYPE));
 			}
 			final String fileName=fileN;
 			if (fileName==null) continue;
-			
-			//claur saving mpp as pod was selecting xml exporter
-			if (fileName.endsWith(".pod")){ //$NON-NLS-1$
-				opt.setFileName(fileName);
-				opt.setImporter(LocalSession.LOCAL_PROJECT_IMPORTER);
-			}
-			else{
-				opt.setFileName(fileName/*+((fileName.endsWith(".xml"))?"":".xml")*/);
-				opt.setImporter(LocalSession.MICROSOFT_PROJECT_IMPORTER);
 
-			}
-	        FileImporter importer=getImporter(opt.getImporter());
+			//claur saving mpp as pod was selecting xml exporter
+			String importerName=fileName.toLowerCase(Locale.ROOT).endsWith(".pod")
+					? LocalSession.LOCAL_PROJECT_IMPORTER
+					: LocalSession.MICROSOFT_PROJECT_IMPORTER;
+	        FileImporter importer=getImporter(importerName);
 			importer.setJobQueue(jobQueue);
 			importer.setProjectFactory(ProjectFactory.getInstance());//used?
 

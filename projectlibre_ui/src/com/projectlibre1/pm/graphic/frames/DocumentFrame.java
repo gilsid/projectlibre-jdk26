@@ -1100,11 +1100,6 @@ public class DocumentFrame extends NamedFrame implements
     }
 
 
-	protected void finalize() throws Throwable {
-		System.out.println("~~~~~~~~~~~~~~~~ DocumentFrame.finalize()");
-		super.finalize();
-	}
-
 	public void cleanUp() {
 		System.out.println("Document Frame Cleanup");
 		if (project != null) {
@@ -1121,6 +1116,16 @@ public class DocumentFrame extends NamedFrame implements
 				if (v != null)
 					((BaseView)v).cleanUp();
 			}});
+		if (project!=null) {
+			Object taskCache=project.getTaskCache();
+			if (taskCache instanceof ReferenceNodeModelCache) {
+				((ReferenceNodeModelCache)taskCache).close();
+			}
+			Object resourceCache=project.getResourceCache();
+			if (resourceCache instanceof ReferenceNodeModelCache) {
+				((ReferenceNodeModelCache)resourceCache).close();
+			}
+		}
     	resetViews();
     	if (jobQueue != null)
     		jobQueue.cancel();

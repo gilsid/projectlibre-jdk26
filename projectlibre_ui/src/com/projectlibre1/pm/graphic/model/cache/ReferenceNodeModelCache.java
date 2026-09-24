@@ -92,7 +92,7 @@ import com.projectlibre1.pm.task.Task;
  * The level is not a view state but it is calculated and cached for performance purposes.
  */
 
-public class ReferenceNodeModelCache implements ObjectEvent.Listener, HierarchyListener, /*TreeModel,*/ ScheduleEventListener {
+public class ReferenceNodeModelCache implements ObjectEvent.Listener, HierarchyListener, /*TreeModel,*/ ScheduleEventListener, AutoCloseable {
 	private NodeModel model;
 	
 	protected NodeCache nodeCache;
@@ -147,6 +147,7 @@ public class ReferenceNodeModelCache implements ObjectEvent.Listener, HierarchyL
 	
 	
 	
+	@Override
 	public void close(){
 	    if (model!=null) {
 	    	removeListeners();
@@ -157,10 +158,6 @@ public class ReferenceNodeModelCache implements ObjectEvent.Listener, HierarchyL
 	    }
 	}
 	
-	protected void finalize() throws Throwable {
-		super.finalize();
-		close();
-	}
 
 	private void removeListeners() {
 		model.getHierarchy().removeHierarchyListener(this);

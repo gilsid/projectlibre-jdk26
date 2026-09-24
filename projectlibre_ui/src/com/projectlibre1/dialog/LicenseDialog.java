@@ -58,6 +58,7 @@ package com.projectlibre1.dialog;
 import java.awt.Dimension;
 import java.awt.Frame;
 import java.net.MalformedURLException;
+import java.net.URI;
 import java.net.URL;
 import java.util.Random;
 import java.util.prefs.Preferences;
@@ -144,7 +145,7 @@ public final class LicenseDialog extends AbstractDialog {
 			thirdParty = createEditorPane(getClass().getClassLoader().getResource("license/third-party/index.html"),1200); //$NON-NLS-1$
 		} else {
 			try {
-				thirdParty = createEditorPane(new URL("http://projectlibre.com/license/third-party/index.html"),1200); //$NON-NLS-1$
+				thirdParty = createEditorPane(URI.create("https://projectlibre.com/license/third-party/index.html").toURL(),1200); //$NON-NLS-1$
 			} catch (MalformedURLException e) {
 				e.printStackTrace();
 			} //$NON-NLS-1$

@@ -56,8 +56,9 @@
 package com.projectlibre1.pm.key;
 
 import java.io.Serializable;
-import java.util.HashMap;
+import java.lang.ref.WeakReference;
 import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
 
 import com.projectlibre1.server.data.CommonDataObject;
 import com.projectlibre1.server.data.DataObject;
@@ -69,7 +70,7 @@ import com.projectlibre1.session.SessionFactory;
  */
 public class HasUniqueIdImpl implements Serializable{
 	private static final long serialVersionUID = 939382200022L;
-	private static Map uniqueIds=new HashMap();
+	private static Map<Long, WeakReference<DataObject>> uniqueIds=new ConcurrentHashMap<>();
 	protected long uniqueId = -1L;
 	protected transient Session session;
 	protected transient boolean local;
@@ -80,19 +81,14 @@ public class HasUniqueIdImpl implements Serializable{
     public HasUniqueIdImpl(DataObject hasUniqueId,long uniqueId) {
     	setLocal(CommonDataObject.isLocal(uniqueId));
     	//System.out.println((hasUniqueId==null?"null":hasUniqueId.getClass()+"")+" UniqueId "+uniqueId+", local? "+local);
-    	uniqueIds.put(new Long(uniqueId),hasUniqueId);
+    	uniqueIds.put(uniqueId,new WeakReference<>(hasUniqueId));
     }
     public HasUniqueIdImpl(boolean local,DataObject hasUniqueId) {
     	setLocal(local);
     	//System.out.println((hasUniqueId==null?"null":hasUniqueId.getClass()+"")+" UniqueId ?, local? "+local);
 		uniqueId = session.getId();
-		uniqueIds.put(new Long(uniqueId),hasUniqueId);
+		uniqueIds.put(uniqueId,new WeakReference<>(hasUniqueId));
     }
-    protected void finalize() throws Throwable {
-        uniqueIds.remove(new Long(uniqueId));
-        super.finalize();
-    }
-
 
 	/**
 	 * @return Returns the uniqueId.
@@ -126,9 +122,10 @@ public class HasUniqueIdImpl implements Serializable{
 		if (localOnly&&!CommonDataObject.isLocal(uniqueId)) return false;
 		if (localOnly&&local) setLocal(false);
 		long oldUniqueId=uniqueId;
-		DataObject hasUniqueId=(DataObject)uniqueIds.remove(new Long(oldUniqueId));
+		WeakReference<DataObject> reference=uniqueIds.remove(oldUniqueId);
+		DataObject hasUniqueId=reference==null?null:reference.get();
 		uniqueId = session.getId();
-		uniqueIds.put(new Long(uniqueId),hasUniqueId);
+		uniqueIds.put(uniqueId,new WeakReference<>(hasUniqueId));
 		//System.out.println("Renumber "+(hasUniqueId==null?"":(hasUniqueId.getClass()+"/"+hasUniqueId.getName()))+": "+oldUniqueId+"-->"+uniqueId);
 		return true;
 	}

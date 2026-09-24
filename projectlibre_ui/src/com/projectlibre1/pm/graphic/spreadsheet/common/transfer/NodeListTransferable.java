@@ -286,7 +286,7 @@ public class NodeListTransferable implements Transferable {
 			if (delim.equals(valueS)) valueS="";
 			else if (st.hasMoreTokens()) st.nextToken();
 			try{
-				model.setValueAt(valueS,row0,++col);
+				model.setValueAt(valueS,row0,col++);
 			}catch(Exception e){}
 		}
 		fieldContext.setRound(round);

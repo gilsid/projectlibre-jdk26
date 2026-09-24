@@ -24,7 +24,7 @@ URL: http://www.projectlibre.org
 Vendor: ProjectLibre
 Packager: Laurent Chretienneau
 BuildArchitectures: noarch
-Requires: jre >= 1.6.0
+Requires: jre >= 26
 Requires(post): desktop-file-utils
 Requires(post): shared-mime-info
 Requires(postun): desktop-file-utils

@@ -76,7 +76,7 @@ public class ReflectionPredicate implements Predicate {
 	 */
 	public boolean evaluate(Object arg0) {
 		try {
-			return ((Boolean)method.invoke(arg0,null)).booleanValue();
+			return ((Boolean)method.invoke(arg0)).booleanValue();
 		} catch (IllegalArgumentException e) {
 			// TODO Auto-generated catch block
 			e.printStackTrace();

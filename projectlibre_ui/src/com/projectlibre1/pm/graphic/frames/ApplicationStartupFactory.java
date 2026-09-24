@@ -56,14 +56,17 @@
 package com.projectlibre1.pm.graphic.frames;
 
 import java.awt.Container;
+import java.io.InputStream;
 import java.net.CookieHandler;
 import java.net.HttpURLConnection;
+import java.net.URI;
 import java.net.URL;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.Iterator;
 import java.util.LinkedList;
 import java.util.List;
+import java.util.Locale;
 import java.util.Properties;
 
 import javax.swing.JFrame;
@@ -95,7 +98,7 @@ public class ApplicationStartupFactory extends StartupFactory {
 		String font=(String)getOpt("font");
 		if (font==null){
 			String javaVendor=System.getProperty("java.vendor");
-			if (javaVendor.startsWith("IBM")){ //to avoid font bug on SLED with IBM jvm
+			if (javaVendor != null && javaVendor.startsWith("IBM")){ //to avoid font bug on SLED with IBM jvm
 				font=FontUtil.getValidFont(new String[]{"DejaVu Sans","Andale Sans"}); //Lucida Sans
 			}
 		}else{
@@ -152,22 +155,22 @@ public class ApplicationStartupFactory extends StartupFactory {
 					String urlString = serverUrl + "/" + Settings.WEB_APP + ((partnerConnectionString==null)?"":"/partner")+"/jnlp/projectlibre_credentials.jnlp";
 					if (partnerConnectionString != null)
 						urlString += "?"+ partnerConnectionString;
-					URL url = new URL(urlString);
+					URL url = URI.create(urlString).toURL();
 					HttpURLConnection http = (HttpURLConnection) url.openConnection();
+					http.setConnectTimeout(5000);
+					http.setReadTimeout(10000);
 					if (sessionId!=null) http.setRequestProperty("Cookie", "JSESSIONID=" + sessionId);
-	//				if (partnerConnectionString == null) {
-	//					http.setRequestMethod("POST");
-	//				} else {
-						http.setRequestMethod("GET");
-	//				}
-					http.connect();
-
-
-					props.load(http.getInputStream());
-					http.disconnect();
-
-					login=props.getProperty("login");
-					password=props.getProperty("password");
+					http.setRequestMethod("GET");
+					try {
+						http.connect();
+						try (InputStream input = http.getInputStream()) {
+							props.load(input);
+						}
+						login=props.getProperty("login");
+						password=props.getProperty("password");
+					} finally {
+						http.disconnect();
+					}
 				} catch (Exception e1) {
 					e1.printStackTrace();
 				}
@@ -244,9 +247,14 @@ public class ApplicationStartupFactory extends StartupFactory {
 		for (Iterator i=opts.keySet().iterator();i.hasNext();){
 			String opt=(String)i.next();
 			System.out.println(opt+":");
+			String normalized=opt.toLowerCase(Locale.ROOT);
+			boolean sensitive=normalized.contains("credential") || normalized.contains("password")
+					|| normalized.contains("secret") || normalized.contains("token");
 			String arg;
 			int index=0;
-			while ((arg=getOpt(opt,index++))!=null) System.out.println("\t"+arg);
+			while ((arg=getOpt(opt,index++))!=null) {
+				System.out.println("\t"+(sensitive?"<redacted>":arg));
+			}
 		}
 	}
 	public void doPostInitView(Container container) {

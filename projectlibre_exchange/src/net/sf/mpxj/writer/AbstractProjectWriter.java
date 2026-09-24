@@ -40,10 +40,10 @@ public abstract class AbstractProjectWriter implements ProjectWriter
     */
    @Override public void write(ProjectFile projectFile, String fileName) throws IOException
    {
-      FileOutputStream fos = new FileOutputStream(fileName);
-      write(projectFile, fos);
-      fos.flush();
-      fos.close();
+      try (FileOutputStream fos = new FileOutputStream(fileName))
+      {
+         write(projectFile, fos);
+      }
    }
 
    /**
@@ -51,9 +51,9 @@ public abstract class AbstractProjectWriter implements ProjectWriter
     */
    @Override public void write(ProjectFile projectFile, File file) throws IOException
    {
-      FileOutputStream fos = new FileOutputStream(file);
-      write(projectFile, fos);
-      fos.flush();
-      fos.close();
+      try (FileOutputStream fos = new FileOutputStream(file))
+      {
+         write(projectFile, fos);
+      }
    }
 }

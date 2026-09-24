@@ -72,10 +72,8 @@ public class PrintSettingsManager {
 			if (tmpLocalSettings==null){
 				byte[] buf=Preferences.userNodeForPackage(PrintSettings.class).getByteArray("printSettings",null);
 				if (buf!=null){
-					try {
-						ObjectInputStream in=new ObjectInputStream(new ByteArrayInputStream(buf));
+					try (ObjectInputStream in=new ObjectInputStream(new ByteArrayInputStream(buf))) {
 						tmpLocalSettings=(PrintSettings)in.readObject();
-						in.close();
 					} catch (Exception e) {
 						e.printStackTrace();
 					}
