@@ -278,7 +278,11 @@ public abstract class StartupFactory {
 				if (login==null||password==null){
 					try {
 						loginUrl=URI.create(serverUrl+"/login").toURL();
-					} catch (MalformedURLException e) {}
+					} catch (RuntimeException e) {
+						loginUrl=null;
+					} catch (MalformedURLException e) {
+						loginUrl=null;
+					}
 				}
 				LoginForm form = LoginDialog.doLogin(graphicManager.getFrame(),loginUrl); // it's actually a singleton
 				if (form.isCancelled())

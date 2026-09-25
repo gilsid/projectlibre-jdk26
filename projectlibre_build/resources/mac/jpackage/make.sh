@@ -14,22 +14,17 @@ rm -f "ProjectLibre-${APP_VERSION}.dmg"
     --main-jar "projectlibre-${APP_VERSION}.jar" \
     --icon source/projectlibre.icns \
     --app-version "${APP_VERSION}"
-cp Info.plist app/ProjectLibre.app/Contents/
+cp "Info.plist" "app/ProjectLibre.app/Contents/"
 
 # 1. Sign all native Mach-O files (except jspawnhelper and libjli.dylib):
-find app/ProjectLibre.app/Contents/runtime -type f \
+find "app/ProjectLibre.app/Contents/runtime" -type f \
   -exec file "{}" \; | grep "Mach-O" | cut -d: -f1 \
-| while read -r file; do
+| while IFS= read -r file; do
   echo "Signing $file"
   codesign --force --timestamp --options runtime \
     --entitlements entitlements.plist \
     --sign "Developer ID Application: ProjectLibre Inc. ($APPLE_TEAM_ID)" "$file"
 done
-
-codesign --force --timestamp --options runtime \
-  --entitlements entitlements.plist \
-  --sign "Developer ID Application: ProjectLibre Inc. ($APPLE_TEAM_ID)" \
-  "app/ProjectLibre.app/Contents/MacOS/ProjectLibre"
 
 codesign --force --timestamp --options runtime \
   --entitlements entitlements.plist \

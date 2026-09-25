@@ -563,15 +563,25 @@ public class UniversalProjectReader implements ProjectReader
                continue;
             }
 
-            FileInputStream fis = new FileInputStream(file);
-            int bytesRead = fis.read(buffer);
-            fis.close();
+            int bytesRead = 0;
+            try (FileInputStream fis = new FileInputStream(file))
+            {
+               while (bytesRead < BUFFER_SIZE)
+               {
+                  int count = fis.read(buffer, bytesRead, BUFFER_SIZE - bytesRead);
+                  if (count < 0)
+                  {
+                     break;
+                  }
+                  if (count == 0)
+                  {
+                     continue;
+                  }
+                  bytesRead += count;
+               }
+            }
 
-            //
-            // If the file is smaller than the buffer we are peeking into,
-            // it's probably not a valid schedule file.
-            //
-            if (bytesRead != BUFFER_SIZE)
+            if (bytesRead == 0)
             {
                continue;
             }

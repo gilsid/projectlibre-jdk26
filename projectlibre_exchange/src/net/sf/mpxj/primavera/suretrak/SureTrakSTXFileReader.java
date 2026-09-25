@@ -47,6 +47,8 @@ import net.sf.mpxj.reader.AbstractProjectReader;
 public final class SureTrakSTXFileReader extends AbstractProjectReader
 {
    private static final long MAX_EXTRACTED_FILE_BYTES = 256L * 1024 * 1024;
+   private static final int MAX_ARCHIVE_ENTRIES = 10000;
+   private static final long MAX_ARCHIVE_BYTES = 512L * 1024 * 1024;
    @Override public void addProjectListener(ProjectListener listener)
    {
       if (m_projectListeners == null)
@@ -65,9 +67,19 @@ public final class SureTrakSTXFileReader extends AbstractProjectReader
          StreamHelper.skip(stream, (32768 + 4));
          tempDir = FileHelper.createTempDir();
 
+         int entryCount = 0;
+         long totalBytes = 0;
          while (stream.available() > 0)
          {
-            extractFile(stream, tempDir);
+            if (++entryCount > MAX_ARCHIVE_ENTRIES)
+            {
+               throw new IOException("SureTrak archive contains too many entries");
+            }
+            totalBytes += extractFile(stream, tempDir);
+            if (totalBytes > MAX_ARCHIVE_BYTES)
+            {
+               throw new IOException("SureTrak archive exceeds the allowed extracted size");
+            }
          }
 
          return SureTrakDatabaseReader.setProjectNameAndRead(tempDir);
@@ -91,7 +103,7 @@ public final class SureTrakSTXFileReader extends AbstractProjectReader
     * @param stream input stream
     * @param dir target directory
     */
-   private void extractFile(InputStream stream, File dir) throws IOException
+   private long extractFile(InputStream stream, File dir) throws IOException
    {
       byte[] dataSize = new byte[4];
       byte[] header = new byte[4];
@@ -122,6 +134,7 @@ public final class SureTrakSTXFileReader extends AbstractProjectReader
       if (dataSizeValue == 0)
       {
          FileHelper.createNewFile(file);
+         return 0;
       }
       else
       {
@@ -131,6 +144,7 @@ public final class SureTrakSTXFileReader extends AbstractProjectReader
             Blast blast = new Blast();
             blast.blast(inputStream, os);
          }
+         return file.length();
       }
    }
 

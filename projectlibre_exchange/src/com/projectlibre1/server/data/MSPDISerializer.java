@@ -332,11 +332,15 @@ public class MSPDISerializer implements ProjectSerializer {
 		} while (tmpFile.exists());
 
 		try (FileOutputStream output = new FileOutputStream(tmpFile)) {
-			if (!saveProject(project, output) || tmpFile.length() == 0) {
+			if (!saveProject(project, output)) {
 				tmpFile.delete();
 				return false;
 			}
 		} catch (IOException e) {
+			tmpFile.delete();
+			return false;
+		}
+		if (tmpFile.length() == 0) {
 			tmpFile.delete();
 			return false;
 		}

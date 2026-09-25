@@ -359,7 +359,7 @@ public class SpreadSheet extends CommonSpreadSheet implements Cloneable {
 		});
 
 		if (oldModel != spreadSheetModel && oldModel instanceof CommonSpreadSheetModel)
-			((CommonSpreadSheetModel) getModel()).getCache().removeNodeModelListener(this);
+			((CommonSpreadSheetModel) oldModel).getCache().removeNodeModelListener(this);
 		spreadSheetModel.getCache().addNodeModelListener(this);
 
 //		getColumnModel().addColumnModelListener(new TableColumnModelListener(){

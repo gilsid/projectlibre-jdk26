@@ -127,7 +127,7 @@ public final class FileHelper
       }
       Path root = directory.toPath().toRealPath();
       Path target = root.resolve(entryName).normalize();
-      if (!target.startsWith(root))
+      if (!target.startsWith(root) || target.equals(root))
       {
          throw new IOException("Archive entry escapes the destination directory: " + entryName);
       }
@@ -141,10 +141,7 @@ public final class FileHelper
     */
    public static final File createTempDir() throws IOException
    {
-      File dir = File.createTempFile("mpxj", "tmp");
-      delete(dir);
-      mkdirs(dir);
-      return dir;
+      return Files.createTempDirectory("mpxj").toFile();
    }
 
    /**

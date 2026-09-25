@@ -69,11 +69,13 @@ import com.projectlibre1.pm.resource.EnterpriseResource;
 import com.projectlibre1.pm.resource.ResourceImpl;
 import com.projectlibre1.session.Session;
 import com.projectlibre1.util.SerializationFilter;
+import net.sf.mpxj.common.LimitedInputStream;
 
 /**
  *
  */
 public class SerializeUtil {
+    private static final long MAX_SERIALIZED_DATA_BYTES = 64L * 1024 * 1024;
     public static final boolean ZIP=true;
 
 
@@ -117,10 +119,13 @@ public class SerializeUtil {
     public static DataObject deserialize(SerializedDataObject sdata,Session session) throws IOException,ClassNotFoundException{
         ByteArrayInputStream bin=new ByteArrayInputStream(sdata.getSerialized());
         if (ZIP&&(sdata.getType()==DataObjectConstants.CALENDAR_TYPE||sdata.getType()==DataObjectConstants.ENTERPRISE_RESOURCE_TYPE||sdata.getType()==DataObjectConstants.RESOURCE_TYPE)){
-            try (ZipInputStream zin=new ZipInputStream(bin);
-                 ObjectInputStream in=createObjectInputStream(zin)) {
-                zin.getNextEntry();
-                return readData(in, sdata, session);
+            try (ZipInputStream zin=new ZipInputStream(bin)) {
+                if (zin.getNextEntry() == null) {
+                    throw new IOException("Zipped project data has no entries");
+                }
+                try (ObjectInputStream in=createObjectInputStream(new LimitedInputStream(zin, MAX_SERIALIZED_DATA_BYTES))) {
+                    return readData(in, sdata, session);
+                }
             }
         }
         try (ObjectInputStream in=createObjectInputStream(bin)) {

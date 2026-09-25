@@ -117,6 +117,10 @@ public class HasUniqueIdImpl implements Serializable{
 		return uniqueId == ((HasUniqueIdImpl)other).getUniqueId();
 	}
 
+	public int hashCode() {
+		return (int)(uniqueId ^ (uniqueId >>> 32));
+	}
+
 	public boolean renumber(boolean localOnly){
 		if (uniqueId==-1) return false;
 		if (localOnly&&!CommonDataObject.isLocal(uniqueId)) return false;
@@ -125,7 +129,9 @@ public class HasUniqueIdImpl implements Serializable{
 		WeakReference<DataObject> reference=uniqueIds.remove(oldUniqueId);
 		DataObject hasUniqueId=reference==null?null:reference.get();
 		uniqueId = session.getId();
-		uniqueIds.put(uniqueId,new WeakReference<>(hasUniqueId));
+		if (hasUniqueId != null) {
+			uniqueIds.put(uniqueId,new WeakReference<>(hasUniqueId));
+		}
 		//System.out.println("Renumber "+(hasUniqueId==null?"":(hasUniqueId.getClass()+"/"+hasUniqueId.getName()))+": "+oldUniqueId+"-->"+uniqueId);
 		return true;
 	}

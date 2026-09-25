@@ -146,6 +146,8 @@ public final class LicenseDialog extends AbstractDialog {
 		} else {
 			try {
 				thirdParty = createEditorPane(URI.create("https://projectlibre.com/license/third-party/index.html").toURL(),1200); //$NON-NLS-1$
+			} catch (RuntimeException e) {
+				e.printStackTrace();
 			} catch (MalformedURLException e) {
 				e.printStackTrace();
 			} //$NON-NLS-1$

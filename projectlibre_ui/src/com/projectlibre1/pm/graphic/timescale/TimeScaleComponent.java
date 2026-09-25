@@ -60,6 +60,7 @@ import java.awt.Dimension;
 import java.awt.Font;
 import java.awt.Graphics;
 import java.awt.Graphics2D;
+import java.awt.GraphicsEnvironment;
 import java.awt.Rectangle;
 import java.awt.RenderingHints;
 import java.awt.Shape;
@@ -132,17 +133,24 @@ public class TimeScaleComponent extends JPanel {
 	}
 
 	public static void paintTimeScale(Graphics2D g2,CoordinatesConverter coord,Font font,Dimension d,boolean clipping){
-		applyCrispTextHints(g2);
+		if (clipping) {
+			applyCrispTextHints(g2);
+		}
 		Rectangle clipBounds = g2.getClipBounds();
 		double h=d.getHeight();
 		double x0,w;
 		if (clipping){
-			x0=clipBounds.getX();
-			w=clipBounds.getWidth();//getWidth();
-			GraphicManager.getInstance().getLafManager().paintTimeScale(g2, clipBounds.x, 0,clipBounds.width,d.height, new Shape[]{
-					new Line2D.Double(x0,0,x0+w,0),
-					new Line2D.Double(x0,h-1,x0+w,h-1),
-			});
+			if (clipBounds==null) {
+				x0=0;
+				w=d.getWidth();
+			} else {
+				x0=clipBounds.getX();
+				w=clipBounds.getWidth();//getWidth();
+				GraphicManager.getInstance().getLafManager().paintTimeScale(g2, clipBounds.x, 0,clipBounds.width,d.height, new Shape[]{
+						new Line2D.Double(x0,0,x0+w,0),
+						new Line2D.Double(x0,h-1,x0+w,h-1),
+				});
+			}
 		}else{
 			x0=0;
 			w=d.getWidth();
@@ -156,10 +164,12 @@ public class TimeScaleComponent extends JPanel {
 
 
 		TimeIterator i=coord.getTimeIterator(x0,x0+w);
-		g2.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
-		g2.setRenderingHint(RenderingHints.KEY_TEXT_ANTIALIASING, RenderingHints.VALUE_TEXT_ANTIALIAS_LCD_HRGB);
-		g2.setRenderingHint(RenderingHints.KEY_FRACTIONALMETRICS, RenderingHints.VALUE_FRACTIONALMETRICS_ON);
-		g2.setRenderingHint(RenderingHints.KEY_RENDERING, RenderingHints.VALUE_RENDER_QUALITY);
+		if (clipping) {
+			g2.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
+			g2.setRenderingHint(RenderingHints.KEY_TEXT_ANTIALIASING, RenderingHints.VALUE_TEXT_ANTIALIAS_LCD_HRGB);
+			g2.setRenderingHint(RenderingHints.KEY_FRACTIONALMETRICS, RenderingHints.VALUE_FRACTIONALMETRICS_ON);
+			g2.setRenderingHint(RenderingHints.KEY_RENDERING, RenderingHints.VALUE_RENDER_QUALITY);
+		}
 		//g2.getRenderingHints().put(RenderingHints.KEY_ANTIALIASING,RenderingHints.VALUE_ANTIALIAS_ON);
 		//g2.setFont(new Font("Courrier", Font.PLAIN, 12));
 		g2.setFont(/*UIManager.getFont("TableHeader.cellFont")*/font);
@@ -212,6 +222,9 @@ public class TimeScaleComponent extends JPanel {
 	 * fractional metrics. Fixes visibly pixelated timeline headers on Linux HiDPI.
 	 */
 	private static void applyCrispTextHints(Graphics2D g2) {
+		if (GraphicsEnvironment.isHeadless()) {
+			return;
+		}
 		Object desktopHints = Toolkit.getDefaultToolkit().getDesktopProperty("awt.font.desktophints");
 		if (desktopHints instanceof java.util.Map) {
 			g2.addRenderingHints((java.util.Map<?, ?>) desktopHints);

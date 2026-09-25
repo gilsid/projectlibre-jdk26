@@ -124,11 +124,13 @@ public class LocalFileImporter extends FileImporter {
 				System.out.println("Loading "+getFileName()+"..."); //$NON-NLS-1$ //$NON-NLS-2$
 
 				long t1=System.currentTimeMillis();
-				ObjectInputStream in=new ObjectInputStream(fin);
-				in.setObjectInputFilter(SerializationFilter.get());
-				Object obj=in.readObject();
-				if (obj instanceof String) obj=in.readObject(); //check version in the future
-				DocumentData projectData=(DocumentData)obj;
+				DocumentData projectData;
+				try (ObjectInputStream in=new ObjectInputStream(fin)) {
+					in.setObjectInputFilter(SerializationFilter.get());
+					Object obj=in.readObject();
+					if (obj instanceof String) obj=in.readObject(); //check version in the future
+					projectData=(DocumentData)obj;
+				}
 				projectData.setMaster(true);
 				projectData.setLocal(true);
 				long t2=System.currentTimeMillis();

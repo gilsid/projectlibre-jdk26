@@ -135,6 +135,16 @@ public class ResourcePool implements Document, NodeModelDataFactory {
 			initOutline(model);
 		}
 	}
+
+	public void disconnectOutlines(){
+		int count=Settings.numHierarchies();
+		for (int i=0;i<count;i++){
+			NodeModel model=resourceOutlines.getOutline(i);
+			if (model instanceof AssignmentNodeModel){
+				((AssignmentNodeModel)model).close();
+			}
+		}
+	}
 	
 	
 	public void addAndInitializeId(Resource resource) {

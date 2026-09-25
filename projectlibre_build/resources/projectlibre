@@ -245,7 +245,7 @@ if [ "$JAVA_OK" -eq "0" ]; then
 			fi
 		fi
 		if [ "$JAVA_OK" -eq "0" ]; then
-			for i in $JAVA_INSTALL_DIR/* ; do
+			for i in "$JAVA_INSTALL_DIR"/* ; do
 				J="$i/$JAVA_INSTALL_DIR_EXE"
 				if [ "$J" = "$JAVA_INSTALL_DIR/latest" ] || [ "$J" = "$JAVA_INSTALL_DIR/default" ]; then
 					#already checked
@@ -277,7 +277,7 @@ if [ "$JAVA_OK" -eq "0" ]; then
 			fi
 		fi
 		if [ "$JAVA_OK" -eq "0" ]; then
-			for i in $JAVA_INSTALL_DIR/* ; do
+			for i in "$JAVA_INSTALL_DIR"/* ; do
 				J="$i/$JAVA_INSTALL_DIR_EXE"
 				if [ "$J" = "$JAVA_INSTALL_DIR/latest" ] || [ "$J" = "$JAVA_INSTALL_DIR/default" ]; then
 					#already checked
@@ -309,7 +309,7 @@ if [ "$JAVA_OK" -eq "0" ]; then
 			fi
 		fi
 		if [ "$JAVA_OK" -eq "0" ]; then
-			for i in $JAVA_INSTALL_DIR/* ; do
+			for i in "$JAVA_INSTALL_DIR"/* ; do
 				J="$i/$JAVA_INSTALL_DIR_EXE"
 				if [ "$J" = "$JAVA_INSTALL_DIR/latest" ] || [ "$J" = "$JAVA_INSTALL_DIR/default" ]; then
 					#already checked

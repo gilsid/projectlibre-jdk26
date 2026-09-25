@@ -122,8 +122,35 @@ public class UpdateChecker {
 			connection.setConnectTimeout(5000);
 			connection.setReadTimeout(10000);
 			connection.setRequestMethod("GET");
+			// Never follow redirects automatically: an https->http downgrade
+			// after a compromise would bypass the protocol check below.
+			connection.setInstanceFollowRedirects(false);
 			try {
 				connection.connect();
+				int redirects=0;
+				while (isRedirect(connection.getResponseCode())) {
+					if (++redirects > 3) {
+						return;
+					}
+					String location=connection.getHeaderField("Location");
+					connection.disconnect();
+					if (location == null) {
+						return;
+					}
+					url=URI.create(location).toURL();
+					if (!"https".equalsIgnoreCase(url.getProtocol())) {
+						return;
+					}
+					connection=(HttpURLConnection) url.openConnection();
+					connection.setConnectTimeout(5000);
+					connection.setReadTimeout(10000);
+					connection.setRequestMethod("GET");
+					connection.setInstanceFollowRedirects(false);
+					connection.connect();
+				}
+				if (connection.getResponseCode() != HttpURLConnection.HTTP_OK) {
+					return;
+				}
 				try (InputStream input = connection.getInputStream()) {
 					byte[] response=input.readNBytes(MAX_UPDATE_RESPONSE_BYTES);
 					int lineEnd=0;
@@ -134,7 +161,7 @@ public class UpdateChecker {
 						return;
 					}
 					String latestVersion=new String(response, 0, lineEnd, StandardCharsets.UTF_8).trim();
-					if (latestVersion.isEmpty()) {
+					if (latestVersion.isEmpty() || !latestVersion.matches("\\d+(\\.\\d+){0,3}")) {
 						return;
 					}
 					UpdateCheckerFormula formula=new UpdateCheckerFormula();
@@ -174,6 +201,14 @@ public class UpdateChecker {
 	}
 
 
+
+	private static boolean isRedirect(int responseCode) {
+		return responseCode == HttpURLConnection.HTTP_MOVED_PERM
+				|| responseCode == HttpURLConnection.HTTP_MOVED_TEMP
+				|| responseCode == HttpURLConnection.HTTP_SEE_OTHER
+				|| responseCode == 307
+				|| responseCode == 308;
+	}
 
 	public static void checkForUpdateInBackground() {
 		Thread checker=new Thread(new Runnable() {

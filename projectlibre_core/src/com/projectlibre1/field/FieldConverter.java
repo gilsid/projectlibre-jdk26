@@ -292,7 +292,7 @@ public class FieldConverter  {
 		ParsePosition position=new ParsePosition(0);
 		Date result=format.parse(value, position);
 		if (result==null || position.getIndex()!=value.length()) {
-			throw new ParseException("Unparsed text remains", position.getErrorIndex());
+			throw new ParseException("Unparsed text remains", Math.max(position.getErrorIndex(), position.getIndex()));
 		}
 		return result;
 	}

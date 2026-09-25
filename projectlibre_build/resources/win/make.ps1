@@ -1,12 +1,13 @@
 $AppVersion = "@version@"
 $OutputDir = "app"
 
-if ([string]::IsNullOrWhiteSpace($env:JAVA_HOME)) {
-    $env:JAVA_HOME = "C:\Program Files\Java\jdk-26"
+$JdkHome = $env:JAVA_HOME
+if ([string]::IsNullOrWhiteSpace($JdkHome)) {
+    $JdkHome = "C:\Program Files\Java\jdk-26"
 }
 
-$JavaPath = Join-Path $env:JAVA_HOME "bin\java.exe"
-$JpackagePath = Join-Path $env:JAVA_HOME "bin\jpackage.exe"
+$JavaPath = Join-Path $JdkHome "bin\java.exe"
+$JpackagePath = Join-Path $JdkHome "bin\jpackage.exe"
 
 if (-not (Test-Path $JavaPath -PathType Leaf)) {
     Write-Error "java not found. Set JAVA_HOME to a valid JDK 26 installation."
@@ -19,7 +20,8 @@ if (-not (Test-Path $JpackagePath -PathType Leaf)) {
 }
 
 $JavaVersionOutput = (& $JavaPath -version 2>&1 | Out-String)
-if ($JavaVersionOutput -notmatch 'version "26(?:\.|")') {
+$JavaVersionMatch = [regex]::Match($JavaVersionOutput, 'version "(?:1\.)?(\d+)')
+if (-not $JavaVersionMatch.Success -or [int]$JavaVersionMatch.Groups[1].Value -lt 26) {
     Write-Error "ProjectLibre requires Java 26. JAVA_HOME points to an unsupported runtime."
     exit 1
 }

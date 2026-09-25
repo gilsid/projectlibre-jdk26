@@ -116,6 +116,13 @@ public class Main {
 	public static int getRunNumber() {
 		return Preferences.userNodeForPackage(Main.class).getInt("projectlibreRunNumber",0);
 	}
+	public static int getProjectLibreRunNumber() {
+		int runNumber=Preferences.userNodeForPackage(Main.class).getInt("projectlibreRunNumber",-1);
+		if (runNumber < 0) {
+			runNumber=Preferences.userNodeForPackage(Main.class).getInt("runNumber",0);
+		}
+		return runNumber;
+	}
 	public static long getFirstRun() {
 		Preferences preferences = Preferences.userNodeForPackage(Main.class);
 		long firstRun = preferences.getLong(FIRST_RUN_KEY, 0L);
@@ -123,9 +130,6 @@ public class Main {
 			firstRun = preferences.getLong(LEGACY_FIRST_RUN_KEY, System.currentTimeMillis());
 		}
 		return firstRun;
-	}
-	public static int getProjectLibreRunNumber() {
-		return getRunNumber();
 	}
 	public static long getProjectLibreFirstRun() {
 		return getFirstRun();

@@ -71,7 +71,7 @@ MIN_JAVA_VERSION="26"
 JAVA_EXE="java"
 JAVA_OPTS="-Xms128m -Xmx768m -Dawt.useSystemAAFontSettings=on -Dswing.aatext=true -Dsun.java2d.xrender=true -Dsun.java2d.uiScale.enabled=true"
 #PROJECTLIBRE_HOME0="/usr/share/projectlibre"
-PROJECTLIBRE_HOME0=`(dirname $0)`
+PROJECTLIBRE_HOME0="$(dirname "$0")"
 PROJECTLIBRE_HOME="$PROJECTLIBRE_HOME0"
 LOG_LEVEL="DEBUG"
 LOG_FILE="/dev/null"
@@ -234,7 +234,7 @@ if [ "$JAVA_OK" -eq "0" ]; then
 			fi
 		fi
 		if [ "$JAVA_OK" -eq "0" ]; then
-			for i in $JAVA_INSTALL_DIR/* ; do
+			for i in "$JAVA_INSTALL_DIR"/* ; do
 				J="$i/$JAVA_INSTALL_DIR_EXE"
 				if [ "$J" = "$JAVA_INSTALL_DIR/latest" ] || [ "$J" = "$JAVA_INSTALL_DIR/default" ]; then
 					#already checked
@@ -266,7 +266,7 @@ if [ "$JAVA_OK" -eq "0" ]; then
 			fi
 		fi
 		if [ "$JAVA_OK" -eq "0" ]; then
-			for i in $JAVA_INSTALL_DIR/* ; do
+			for i in "$JAVA_INSTALL_DIR"/* ; do
 				J="$i/$JAVA_INSTALL_DIR_EXE"
 				if [ "$J" = "$JAVA_INSTALL_DIR/latest" ] || [ "$J" = "$JAVA_INSTALL_DIR/default" ]; then
 					#already checked
@@ -298,7 +298,7 @@ if [ "$JAVA_OK" -eq "0" ]; then
 			fi
 		fi
 		if [ "$JAVA_OK" -eq "0" ]; then
-			for i in $JAVA_INSTALL_DIR/* ; do
+			for i in "$JAVA_INSTALL_DIR"/* ; do
 				J="$i/$JAVA_INSTALL_DIR_EXE"
 				if [ "$J" = "$JAVA_INSTALL_DIR/latest" ] || [ "$J" = "$JAVA_INSTALL_DIR/default" ]; then
 					#already checked

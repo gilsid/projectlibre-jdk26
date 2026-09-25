@@ -63,6 +63,7 @@ import java.io.ObjectOutputStream;
 import java.util.prefs.Preferences;
 
 import com.projectlibre1.pm.task.Project;
+import com.projectlibre1.util.SerializationFilter;
 import com.projectlibre1.workspace.SavableToWorkspace;
 
 public class PrintSettingsManager {
@@ -73,6 +74,7 @@ public class PrintSettingsManager {
 				byte[] buf=Preferences.userNodeForPackage(PrintSettings.class).getByteArray("printSettings",null);
 				if (buf!=null){
 					try (ObjectInputStream in=new ObjectInputStream(new ByteArrayInputStream(buf))) {
+						in.setObjectInputFilter(SerializationFilter.get());
 						tmpLocalSettings=(PrintSettings)in.readObject();
 					} catch (Exception e) {
 						e.printStackTrace();

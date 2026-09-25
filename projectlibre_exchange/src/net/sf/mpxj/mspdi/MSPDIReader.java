@@ -196,6 +196,7 @@ public class MSPDIReader extends AbstractProjectReader //claur removed final to 
          factory.setFeature("http://xml.org/sax/features/external-general-entities", false);
          factory.setFeature("http://xml.org/sax/features/external-parameter-entities", false);
          factory.setFeature("http://apache.org/xml/features/nonvalidating/load-external-dtd", false);
+         factory.setFeature("http://javax.xml.XMLConstants/feature/secure-processing", true);
          factory.setXIncludeAware(false);
          factory.setNamespaceAware(true);
          SAXParser saxParser = factory.newSAXParser();

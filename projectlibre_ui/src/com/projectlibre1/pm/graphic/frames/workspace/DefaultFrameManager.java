@@ -106,7 +106,7 @@ public class DefaultFrameManager implements FrameManager {
 		while (i.hasNext()) {
 			((DocumentFrame)i.next()).cleanUp();
 		}
-		projectComboBox.removeAll();
+		projectComboBox.removeAllItems();
 		container = null;
 		emptyPanel = null;
 		previous = null;

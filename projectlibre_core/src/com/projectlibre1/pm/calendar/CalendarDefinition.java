@@ -314,6 +314,9 @@ public class CalendarDefinition implements WorkCalendar, Cloneable {
 		if (earlierDate == 0) // degenerate case.  A 0 date means undefined, so don't process it
 			return laterDate;
 
+		if (week == null || week.getDuration() <= 0) {
+			throw new IllegalArgumentException("Calendar has no working time");
+		}
 		CalendarIterator iterator = CalendarIteratorFactory.getInstance(); // use object pool for speed
 		long earlierDay = iterator.dayOf(earlierDate);
 		long laterDay = iterator.dayOf(laterDate);

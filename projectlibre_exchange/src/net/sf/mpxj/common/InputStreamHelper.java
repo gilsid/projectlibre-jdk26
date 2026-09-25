@@ -98,6 +98,7 @@ public class InputStreamHelper
       {
          long totalBytes = 0;
          int entryCount = 0;
+         java.util.Set<String> seenEntries = new java.util.HashSet<String>();
 
          while (true)
          {
@@ -112,6 +113,10 @@ public class InputStreamHelper
             }
 
             String entryName = entry.getName();
+            if (!seenEntries.add(entryName))
+            {
+               throw new IOException("Archive contains a duplicate entry: " + entryName);
+            }
             File file = FileHelper.resolveContainedFile(dir, entryName);
             if (entry.isDirectory())
             {
@@ -150,7 +155,7 @@ public class InputStreamHelper
             }
 
             long compressedSize = entry.getCompressedSize();
-            if (compressedSize > 0 && entryBytes / compressedSize > MAX_COMPRESSION_RATIO)
+            if (compressedSize > 0 && entryBytes > compressedSize * MAX_COMPRESSION_RATIO)
             {
                throw new IOException("Archive entry exceeds the allowed compression ratio: " + entryName);
             }

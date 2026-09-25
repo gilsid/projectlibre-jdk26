@@ -17,14 +17,23 @@ public final class SerializationFilter {
     private static final long MAX_DEPTH = 100;
     private static final long MAX_REFERENCES = 200000;
     private static final long MAX_STREAM_BYTES = 512L * 1024 * 1024;
+    private static final long MAX_ARRAY_LENGTH = 67_108_864L;
 
     private static final ObjectInputFilter INSTANCE = info -> {
         if (info.depth() > MAX_DEPTH || info.references() > MAX_REFERENCES || info.streamBytes() > MAX_STREAM_BYTES) {
             return ObjectInputFilter.Status.REJECTED;
         }
+        if (info.arrayLength() >= 0 && info.arrayLength() > MAX_ARRAY_LENGTH) {
+            return ObjectInputFilter.Status.REJECTED;
+        }
 
         Class<?> serialClass = info.serialClass();
         if (serialClass == null) {
+            // Null for dynamic proxies but also for array type descriptors
+            // (e.g. the byte[] magnitude inside BigDecimal, which Money
+            // extends). No InvocationHandler exists in the allowed packages,
+            // so proxies cannot resolve to anything usable; leave undecided
+            // rather than break legitimate money/cost data.
             return ObjectInputFilter.Status.UNDECIDED;
         }
 
@@ -64,13 +73,14 @@ public final class SerializationFilter {
                 || className.startsWith("com.projectlibre.")
                 || className.startsWith("net.sf.mpxj.")
                 || className.startsWith("org.projectlibre.")
+                || className.startsWith("java.awt.print.")
                 || className.startsWith("java.lang.")
                 || className.startsWith("java.math.")
                 || className.startsWith("java.time.")
                 || className.startsWith("java.util.")
+                || className.startsWith("javax.print.attribute.")
                 || className.equals("java.io.File")
-                || className.equals("java.net.URI")
-                || className.equals("java.net.URL")) {
+                || className.equals("java.net.URI")) {
             return ObjectInputFilter.Status.ALLOWED;
         }
 

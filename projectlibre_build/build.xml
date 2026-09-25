@@ -328,10 +328,16 @@
 			<arg value="+x"/>
 			<arg value="${packages}/projectlibre-${version}/projectlibre.sh"/>
 		</exec>
+		<!-- GNU tar owner flags are not supported by BSD tar (macOS).
+		     Override with -Dtar_executable=gtar plus tar_owner_args set to the
+		     numeric owner flags if needed. -->
+		<condition property="tar_owner_args" value="--numeric-owner --owner=0 --group=0" else="">
+			<not>
+				<os family="mac"/>
+			</not>
+		</condition>
 		<exec executable="${tar_executable}" failonerror="true"> <!-- to preserve permissions also add export COPYFILE_DISABLE=true -->
-			<arg value="--numeric-owner"/>
-			<arg value="--owner=0"/>
-			<arg value="--group=0"/>
+			<arg line="${tar_owner_args}"/>
 			<arg value="-czf"/>
 			<arg value="${packages}/projectlibre-${version}.tar.gz"/>
 			<arg value="-C"/>

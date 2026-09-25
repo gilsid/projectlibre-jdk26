@@ -209,10 +209,15 @@ public class LafManagerImpl implements LafManager {
 	}
 	public Color getUnselectedBackgroundColor() {
 		LookAndFeel laf = UIManager.getLookAndFeel();
+		Color fallback=Color.LIGHT_GRAY;
+		if (laf == null || laf.getDefaults() == null)
+			return fallback;
 		if (Environment.isMac())
 			return Environment.isMac()?Colors.VERY_LIGHT_GRAY:laf.getDefaults().getColor("TableHeader.background");//table.getTableHeader ().getBackground()
-		else
-			return laf.getDefaults().getColor("TableHeader.focusCellForeground");
+		else {
+			Color color=laf.getDefaults().getColor("TableHeader.focusCellForeground");
+			return color == null ? fallback : color;
+		}
 	}
 
 	public void dumpUIValues() {

@@ -96,6 +96,9 @@ public class ResourcePoolFactory {
 	}
 	
 	public void removePool(ResourcePool pool) {
+		if (pool != null) {
+			pool.disconnectOutlines();
+		}
 		resourcePools.remove(pool);
 	}
 

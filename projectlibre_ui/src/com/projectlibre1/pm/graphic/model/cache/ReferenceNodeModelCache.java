@@ -94,6 +94,7 @@ import com.projectlibre1.pm.task.Task;
 
 public class ReferenceNodeModelCache implements ObjectEvent.Listener, HierarchyListener, /*TreeModel,*/ ScheduleEventListener, AutoCloseable {
 	private NodeModel model;
+	private boolean closed;
 	
 	protected NodeCache nodeCache;
 	protected DependencyCache edgeCache;
@@ -149,13 +150,18 @@ public class ReferenceNodeModelCache implements ObjectEvent.Listener, HierarchyL
 	
 	@Override
 	public void close(){
+	    if (closed) return;
+	    closed = true;
 	    if (model!=null) {
 	    	removeListeners();
 	    	nodeCache.removeAllVisibleElements();
 	    	nodeCache.clear();
 	    	edgeCache.removeAllVisibleElements();
 	    	edgeCache.clear();
+	    	model=null;
 	    }
+	    document=null;
+	    receiveEvents=false;
 	}
 	
 

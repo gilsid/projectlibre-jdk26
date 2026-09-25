@@ -331,8 +331,17 @@ public final class LocaleDialog extends AbstractDialog {
 					"".equals(code))
 				currentCountry=DEFAULT_COUNTRY;
 			else {
-			    Locale locale = Locale.of("en", code);
-	        	currentCountry=new Country(code, locale.getDisplayCountry(locale));
+			    Locale locale;
+			    try {
+			    	locale=Locale.of("en", code);
+			    } catch (RuntimeException bad) {
+			    	locale=Locale.ENGLISH;
+			    	code="";
+			    }
+			    if ("".equals(code))
+			    	currentCountry=DEFAULT_COUNTRY;
+			    else
+	        		currentCountry=new Country(code, locale.getDisplayCountry(locale));
 			}
 		}
 		

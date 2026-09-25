@@ -83,7 +83,7 @@ import com.projectlibre1.undo.AssignmentDeletionEdit;
 /**
  *
  */
-public class AssignmentNodeModel extends DefaultNodeModel implements ObjectEvent.Listener{
+public class AssignmentNodeModel extends DefaultNodeModel implements ObjectEvent.Listener, AutoCloseable{
 	protected Document document;
 	protected boolean containsLeftObjects;
 
@@ -172,14 +172,10 @@ public class AssignmentNodeModel extends DefaultNodeModel implements ObjectEvent
 		}
 	}
 
+	@Override
 	public void close() {
 		setDocument(null);
 	}
-
-
-
-
-
 	public boolean isContainsLeftObjects() {
 		return containsLeftObjects;
 	}

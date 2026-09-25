@@ -192,8 +192,11 @@
         <Property Id="JAVA_CURRENT_VERSION64">
             <RegistrySearch Id="JRE_KEY64" Root="HKLM" Key="SOFTWARE\JavaSoft\Java Runtime Environment" Name="CurrentVersion" Type="raw"  Win64="yes"/>
         </Property>
-        <Condition Message="Java is not installed. ProjectLibre requires Java version 6 or later. Please install Java: http://www.java.com/download"><![CDATA[(Installed OR JAVA_CURRENT_VERSION OR JAVA_CURRENT_VERSION64) AND (JAVA_CURRENT_VERSION <> "" OR JAVA_CURRENT_VERSION64 <> "") ]]></Condition>
-        <Condition Message="ProjectLibre requires Java 26 or later. Please install OpenJDK 26 : https://jdk.java.net/"><![CDATA[(Installed OR JAVA_CURRENT_VERSION OR JAVA_CURRENT_VERSION64) AND (JAVA_CURRENT_VERSION >= "26" OR JAVA_CURRENT_VERSION64 >= "26")]]></Condition>
+        <Condition Message="Java is not installed. ProjectLibre requires Java 26 or later. Please install OpenJDK 26: https://jdk.java.net/"><![CDATA[(Installed OR JAVA_CURRENT_VERSION OR JAVA_CURRENT_VERSION64) AND (JAVA_CURRENT_VERSION <> "" OR JAVA_CURRENT_VERSION64 <> "") ]]></Condition>
+        <!-- Registry versions are strings, so compare lexicographically with a
+             single-digit guard: "9" >= "26" is true as strings. Versions are
+             either legacy "1.x" or a plain major ("9", "17", "26", ...). -->
+        <Condition Message="ProjectLibre requires Java 26 or later. Please install OpenJDK 26 : https://jdk.java.net/"><![CDATA[(Installed OR JAVA_CURRENT_VERSION OR JAVA_CURRENT_VERSION64) AND ((JAVA_CURRENT_VERSION >= "26" AND JAVA_CURRENT_VERSION < "9" AND NOT JAVA_CURRENT_VERSION >< "1.") OR (JAVA_CURRENT_VERSION64 >= "26" AND JAVA_CURRENT_VERSION64 < "9" AND NOT JAVA_CURRENT_VERSION64 >< "1."))]]></Condition>
 
 		<Feature Id="DefaultFeature" Title="Main Feature" Level="1">
 			<ComponentRef Id="ApplicationFiles" />

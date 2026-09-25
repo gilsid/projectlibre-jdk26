@@ -9,7 +9,7 @@ fi
 
 rm -rf app
 mkdir -p app
-rm -f "ProjectLibre-${APP_VERSION}.deb"
+rm -f app/*.deb "ProjectLibre-${APP_VERSION}.deb"
 "${JPACKAGE}" --type deb --input source --dest app --name ProjectLibre \
     --main-jar "projectlibre-${APP_VERSION}.jar" \
     --icon source/projectlibre.png \

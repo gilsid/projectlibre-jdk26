@@ -1111,28 +1111,35 @@ public class DocumentFrame extends NamedFrame implements
 			getUndoController().getEditSupport().removeUndoableEditListener(this);
 		if (coord != null)
 			coord.removeTimeScaleListener(mainView);
-    	forAllViews(new Closure() {
-			public void execute(Object v) {
-				if (v != null)
-					((BaseView)v).cleanUp();
-			}});
-		if (project!=null) {
-			Object taskCache=project.getTaskCache();
-			if (taskCache instanceof ReferenceNodeModelCache) {
-				((ReferenceNodeModelCache)taskCache).close();
+    	try {
+    		forAllViews(new Closure() {
+				public void execute(Object v) {
+					if (v != null) {
+						try {
+							((BaseView)v).cleanUp();
+						} catch (RuntimeException e) {
+							e.printStackTrace();
+						}
+					}
+				}});
+    	} finally {
+			if (project!=null) {
+				Object taskCache=project.getTaskCache();
+				if (taskCache instanceof ReferenceNodeModelCache) {
+					((ReferenceNodeModelCache)taskCache).close();
+				}
+				Object resourceCache=project.getResourceCache();
+				if (resourceCache instanceof ReferenceNodeModelCache) {
+					((ReferenceNodeModelCache)resourceCache).close();
+				}
 			}
-			Object resourceCache=project.getResourceCache();
-			if (resourceCache instanceof ReferenceNodeModelCache) {
-				((ReferenceNodeModelCache)resourceCache).close();
-			}
-		}
+    	}
     	resetViews();
     	if (jobQueue != null)
     		jobQueue.cancel();
     	jobQueue =null;
 		project = null;
 		coord = null;
-		resetViews();
 	}
 
 	void resetViews() {

@@ -20,8 +20,8 @@ VIProductVersion "1.7.0.0"
 !define PRODUCT_NAME "ProjectLibre"
  
 ; Definitions for Java 26
-!define JRE_VERSION "6.0"
-!define JRE_URL "http://javadl.sun.com/webapps/download/AutoDL?BundleId=68735"
+!define JRE_VERSION "26"
+!define JRE_URL "https://jdk.java.net/"
  
 ; use javaw.exe to avoid dosbox.
 ; use java.exe to keep stdout/stderr
@@ -106,7 +106,7 @@ Function GetJRE
 ;    IfFileExists $R0 0 GoodLuck
 ;    Call CheckJREVersion
 ;    IfErrors GoodLuck JreFound
-    MessageBox MB_ICONINFORMATION "ProjectLibre requires Java version 6 or later. Please install Java: http://www.java.com/download"
+    MessageBox MB_ICONINFORMATION "ProjectLibre requires Java version 26 or later. Please install Java: https://jdk.java.net/"
     Abort
 
   ; 4) wishing you good luck
